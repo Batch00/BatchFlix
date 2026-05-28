@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\carso\\\\Batch Apps\\\\batchflix\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(grep -E \"\\\\.\\(json|config|tsconfig|eslint|prettier|cursor|md\\)$\")",
+      "Bash(git ls-tree *)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git remote *)",
+      "Bash(npm --version)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --no-turbopack)",
+      "Bash(mv README.md /tmp/batchflix_README.md)",
+      "Bash(mv CLAUDE.md /tmp/batchflix_CLAUDE.md)",
+      "Bash(mv /tmp/batchflix_CLAUDE.md CLAUDE.md)",
+      "Bash(mv /tmp/batchflix_README.md README.md)",
+      "Bash(npm install *)",
+      "Bash(npx shadcn@latest init --yes)",
+      "Bash(npx shadcn@latest init --help)",
+      "Bash(npx shadcn@latest init -b radix -y --css-variables)",
+      "Bash(npx shadcn@latest init -b radix -y -d)",
+      "Read(//c/c/Users/carso/Batch Apps/batchflix/**)",
+      "Read(//c/c/Users/carso/Batch Apps/batchflix/app/**)",
+      "Bash(npx shadcn@latest add card input label -y)",
+      "Bash(npm run *)"
+    ]
+  }
+}

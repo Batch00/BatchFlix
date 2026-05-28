@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSearchContext } from "@/components/search/SearchProvider";
 
 const navLinks = [
   { href: "/library", label: "Library" },
@@ -15,6 +16,7 @@ const navLinks = [
 export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { open } = useSearchContext();
 
   return (
     <header className="h-14 border-b border-border bg-card">
@@ -43,12 +45,27 @@ export function TopNav() {
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={open}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            aria-label="Search"
+          >
+            <Search className="h-4 w-4" />
+            <span className="hidden text-xs md:inline">
+              <kbd className="rounded border border-border bg-secondary px-1.5 py-0.5 font-sans text-[10px]">
+                K
+              </kbd>
+            </span>
+          </button>
+
           <div className="hidden h-8 w-8 items-center justify-center rounded-full bg-secondary md:flex">
             <User className="h-4 w-4 text-muted-foreground" />
           </div>
 
           <button
+            type="button"
             className="flex items-center justify-center md:hidden"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"

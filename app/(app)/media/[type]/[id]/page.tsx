@@ -16,6 +16,7 @@ import { getUserMediaByTmdbId } from "@/lib/queries/library";
 import { AddToLibrary } from "@/components/library/AddToLibrary";
 import { AddToListButton } from "@/components/library/AddToListButton";
 import { MediaDetailSkeleton } from "@/components/skeletons/MediaDetailSkeleton";
+import { BackButton } from "@/components/ui/BackButton";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -145,6 +146,9 @@ async function MediaDetailData({
           <div className="h-full w-full bg-secondary" />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute left-4 top-4 z-10">
+          <BackButton />
+        </div>
       </div>
 
       {/* Content */}

@@ -18,8 +18,8 @@ export default async function AppLayout({
 
   return (
     <>
-      <TopNav favoritesListId={favoritesListId} />
-      <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
+      <TopNav favoritesListId={favoritesListId} userEmail={user?.email ?? null} />
+      <main className="min-h-[calc(100vh-3.5rem)] pt-14">{children}</main>
     </>
   );
 }

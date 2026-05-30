@@ -33,6 +33,7 @@ export type UserMediaRow = {
 type LibraryFilters = {
   status?: "watched" | "watching" | "watchlist";
   sort?: "date_added" | "watched_date" | "rating" | "title";
+  mediaType?: "movie" | "tv";
   limit?: number;
   offset?: number;
 };
@@ -42,7 +43,7 @@ export async function getUserLibrary(
   userId: string,
   filters: LibraryFilters = {}
 ): Promise<UserMediaRow[]> {
-  const { status, sort = "date_added", limit, offset } = filters;
+  const { status, sort = "date_added", mediaType, limit, offset } = filters;
 
   let query = supabase
     .schema("batchflix")
@@ -52,6 +53,10 @@ export async function getUserLibrary(
 
   if (status) {
     query = query.eq("status", status);
+  }
+
+  if (mediaType) {
+    query = query.eq("media_items.media_type", mediaType);
   }
 
   if (sort === "date_added") {

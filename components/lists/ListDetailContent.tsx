@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus, X, Film, Tv } from "lucide-react";
+import { ChevronLeft, Plus, X, Film, Tv, LayoutGrid, List } from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -23,10 +23,13 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
+import { StarRating } from "@/components/library/StarRating";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { ListWithItems, ListItemRow } from "@/lib/queries/lists";
+
+const VIEW_PREF_KEY = "batchflix_view_preference";
 
 const COLOR_BG: Record<string, string> = {
   "#2563EB": "bg-blue-600",
@@ -37,6 +40,12 @@ const COLOR_BG: Record<string, string> = {
   "#ca8a04": "bg-yellow-600",
   "#16a34a": "bg-green-600",
   "#0891b2": "bg-cyan-600",
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  watched: "bg-primary/20 text-primary border-primary/30",
+  watching: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
+  watchlist: "bg-secondary text-muted-foreground border-border",
 };
 
 type SortableItemProps = {
@@ -136,6 +145,80 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
   );
 }
 
+type ListRowItemProps = {
+  item: ListItemRow;
+  onRemove: (mediaId: string) => void;
+};
+
+function ListRowItem({ item, onRemove }: ListRowItemProps) {
+  const m = item.media_items;
+  const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80">
+      <Link
+        href={`/media/${m.media_type}/${m.tmdb_id}`}
+        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+      >
+        {m.poster_path ? (
+          <Image
+            src={`https://image.tmdb.org/t/p/w92${m.poster_path}`}
+            alt={m.title}
+            fill
+            className="object-cover"
+            sizes="40px"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-secondary">
+            {m.media_type === "movie" ? (
+              <Film className="h-3 w-3 text-muted-foreground" />
+            ) : (
+              <Tv className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
+        )}
+      </Link>
+
+      <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
+        <div className="mt-0.5 flex items-center gap-2">
+          {year && <span className="text-xs text-muted-foreground">{year}</span>}
+          <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">
+            {m.media_type}
+          </span>
+        </div>
+      </Link>
+
+      <div className="hidden items-center gap-3 sm:flex">
+        {item.user_media && (
+          <span
+            className={cn(
+              "rounded-full border px-2.5 py-0.5 text-xs font-medium capitalize",
+              STATUS_BADGE[item.user_media.status] ?? STATUS_BADGE.watchlist
+            )}
+          >
+            {item.user_media.status}
+          </span>
+        )}
+        {item.user_media?.rating && item.user_media.rating > 0 ? (
+          <StarRating rating={item.user_media.rating} size={14} />
+        ) : (
+          <div className="w-24" />
+        )}
+      </div>
+
+      <button
+        type="button"
+        aria-label="Remove from list"
+        onClick={() => onRemove(item.media_id)}
+        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
 type Props = {
   list: ListWithItems;
 };
@@ -144,6 +227,19 @@ export function ListDetailContent({ list }: Props) {
   const router = useRouter();
   const { openForList } = useSearchContext();
   const [items, setItems] = useState<ListItemRow[]>(list.list_items);
+  const [view, setView] = useState<"grid" | "list">("list");
+
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_PREF_KEY);
+    if (stored === "grid" || stored === "list") {
+      setView(stored);
+    }
+  }, []);
+
+  function handleViewChange(newView: "grid" | "list") {
+    setView(newView);
+    localStorage.setItem(VIEW_PREF_KEY, newView);
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -235,14 +331,45 @@ export function ListDetailContent({ list }: Props) {
           </p>
         </div>
 
-        <Button
-          variant="outline"
-          onClick={() => openForList(list.id, list.name)}
-          className="flex-shrink-0"
-        >
-          <Plus className="h-4 w-4" />
-          Add items
-        </Button>
+        <div className="flex flex-shrink-0 items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center rounded-md border border-border">
+            <button
+              type="button"
+              onClick={() => handleViewChange("grid")}
+              className={cn(
+                "rounded-l-md p-2 transition-colors duration-150",
+                view === "grid"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewChange("list")}
+              className={cn(
+                "rounded-r-md p-2 transition-colors duration-150",
+                view === "list"
+                  ? "bg-secondary text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              aria-label="List view"
+            >
+              <List className="h-4 w-4" />
+            </button>
+          </div>
+
+          <Button
+            variant="outline"
+            onClick={() => openForList(list.id, list.name)}
+          >
+            <Plus className="h-4 w-4" />
+            Add items
+          </Button>
+        </div>
       </div>
 
       {items.length === 0 ? (
@@ -263,7 +390,7 @@ export function ListDetailContent({ list }: Props) {
             Add items
           </Button>
         </div>
-      ) : (
+      ) : view === "grid" ? (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -285,6 +412,12 @@ export function ListDetailContent({ list }: Props) {
             </div>
           </SortableContext>
         </DndContext>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {items.map((item) => (
+            <ListRowItem key={item.id} item={item} onRemove={handleRemove} />
+          ))}
+        </div>
       )}
     </div>
   );

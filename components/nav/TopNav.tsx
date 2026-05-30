@@ -1,10 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Menu, User, Search, Heart } from "lucide-react";
+import { useRouter, usePathname } from "next/navigation";
+import { Menu, Search, Heart, LogOut, Library, BarChart2, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSearchContext } from "@/components/search/SearchProvider";
+import { createClient } from "@/lib/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -21,19 +30,29 @@ const navLinks = [
 
 type Props = {
   favoritesListId: string | null;
+  userEmail: string | null;
 };
 
-export function TopNav({ favoritesListId }: Props) {
+export function TopNav({ favoritesListId, userEmail }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const { open } = useSearchContext();
 
   const favHref = favoritesListId ? `/lists/${favoritesListId}` : "/lists";
 
+  const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+  }
+
   return (
-    <header className="h-14 border-b border-border bg-card">
+    <header className="sticky top-0 z-40 h-14 border-b border-border bg-card">
       <div className="flex h-full items-center justify-between px-4 md:px-6">
         <Link
-          href="/"
+          href="/library"
           className="text-base font-bold tracking-tight text-foreground"
         >
           BatchFlix
@@ -45,10 +64,10 @@ export function TopNav({ favoritesListId }: Props) {
               key={link.href}
               href={link.href}
               className={cn(
-                "text-sm transition-colors duration-150 hover:text-foreground",
+                "text-sm transition-colors duration-150",
                 pathname.startsWith(link.href)
-                  ? "text-foreground"
-                  : "text-muted-foreground"
+                  ? "font-medium text-foreground underline underline-offset-4 decoration-primary"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {link.label}
@@ -79,9 +98,54 @@ export function TopNav({ favoritesListId }: Props) {
             <Heart className="h-4 w-4" />
           </Link>
 
-          <div className="hidden h-8 w-8 items-center justify-center rounded-full bg-secondary md:flex">
-            <User className="h-4 w-4 text-muted-foreground" />
-          </div>
+          {/* Profile dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                type="button"
+                aria-label="Profile menu"
+                className="hidden h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium text-foreground transition-colors hover:bg-secondary/80 md:flex"
+              >
+                {avatarLetter}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {userEmail && (
+                <>
+                  <DropdownMenuLabel className="truncate max-w-48">
+                    {userEmail}
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                </>
+              )}
+              <DropdownMenuItem asChild>
+                <Link href="/library" className="flex items-center gap-2">
+                  <Library className="h-4 w-4" />
+                  Library
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/stats" className="flex items-center gap-2">
+                  <BarChart2 className="h-4 w-4" />
+                  Stats
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/lists" className="flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Lists
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
 
           {/* Mobile menu */}
           <Sheet>
@@ -103,7 +167,7 @@ export function TopNav({ favoritesListId }: Props) {
                     className={cn(
                       "rounded-md px-3 py-2.5 text-sm transition-colors duration-150 hover:bg-secondary hover:text-foreground",
                       pathname.startsWith(link.href)
-                        ? "bg-secondary text-foreground"
+                        ? "bg-secondary text-foreground font-medium"
                         : "text-muted-foreground"
                     )}
                   >
@@ -125,7 +189,18 @@ export function TopNav({ favoritesListId }: Props) {
                   <Search className="h-4 w-4" />
                   Search
                 </button>
+                <button
+                  type="button"
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm text-destructive transition-colors duration-150 hover:bg-secondary"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
               </nav>
+              {userEmail && (
+                <p className="px-7 text-xs text-muted-foreground">{userEmail}</p>
+              )}
             </SheetContent>
           </Sheet>
         </div>

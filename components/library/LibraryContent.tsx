@@ -28,13 +28,22 @@ import type { UserMediaRow } from "@/lib/queries/library";
 
 type Status = "all" | "watched" | "watching" | "watchlist";
 type Sort = "date_added" | "watched_date" | "rating" | "title";
+type MediaType = "all" | "movie" | "tv";
 type View = "grid" | "list";
+
+const VIEW_PREF_KEY = "batchflix_view_preference";
 
 const FILTER_TABS: { value: Status; label: string }[] = [
   { value: "all", label: "All" },
   { value: "watched", label: "Watched" },
   { value: "watching", label: "Watching" },
   { value: "watchlist", label: "Watchlist" },
+];
+
+const MEDIA_TYPE_TABS: { value: MediaType; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "movie", label: "Movies" },
+  { value: "tv", label: "TV Shows" },
 ];
 
 const SORT_OPTIONS: { value: Sort; label: string }[] = [
@@ -79,7 +88,7 @@ type Props = {
   initialItems: UserMediaRow[];
   status: Status;
   sort: Sort;
-  view: View;
+  mediaType: MediaType;
   favoritesListId: string | null;
 };
 
@@ -87,7 +96,7 @@ export function LibraryContent({
   initialItems,
   status,
   sort,
-  view,
+  mediaType,
   favoritesListId,
 }: Props) {
   const router = useRouter();
@@ -95,7 +104,21 @@ export function LibraryContent({
   const searchParams = useSearchParams();
   const { open: openSearch } = useSearchContext();
   const [items, setItems] = useState(initialItems);
+  const [view, setView] = useState<View>("grid");
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Sync items when server re-fetches with new filters
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
+  // Load view preference from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(VIEW_PREF_KEY);
+    if (stored === "grid" || stored === "list") {
+      setView(stored);
+    }
+  }, []);
 
   const hasItems = initialItems.length > 0;
 
@@ -113,6 +136,11 @@ export function LibraryContent({
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
     router.push(`${pathname}?${params.toString()}`);
+  }
+
+  function handleViewChange(newView: View) {
+    setView(newView);
+    localStorage.setItem(VIEW_PREF_KEY, newView);
   }
 
   function handleRemoved(id: string) {
@@ -147,67 +175,89 @@ export function LibraryContent({
         </div>
 
         {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
-            {FILTER_TABS.map((tab) => (
+        <div className="flex flex-col gap-2">
+          {/* Row 1: status + sort + view toggle */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
+              {FILTER_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  onClick={() => updateParam("status", tab.value)}
+                  className={cn(
+                    "flex-shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
+                    status === tab.value
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Select value={sort} onValueChange={(v) => updateParam("sort", v)}>
+                <SelectTrigger className="h-9 w-36 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="flex items-center rounded-md border border-border">
+                <button
+                  type="button"
+                  onClick={() => handleViewChange("grid")}
+                  className={cn(
+                    "rounded-l-md p-2 transition-colors duration-150",
+                    view === "grid"
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-label="Grid view"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleViewChange("list")}
+                  className={cn(
+                    "rounded-r-md p-2 transition-colors duration-150",
+                    view === "list"
+                      ? "bg-secondary text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  aria-label="List view"
+                >
+                  <List className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: media type filter */}
+          <div className="flex items-center gap-1">
+            {MEDIA_TYPE_TABS.map((tab) => (
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => updateParam("status", tab.value)}
+                onClick={() => updateParam("mediaType", tab.value)}
                 className={cn(
-                  "flex-shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
-                  status === tab.value
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
+                  "rounded-full border px-3 py-1 text-xs transition-colors duration-150",
+                  mediaType === tab.value
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                 )}
               >
                 {tab.label}
               </button>
             ))}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Select value={sort} onValueChange={(v) => updateParam("sort", v)}>
-              <SelectTrigger className="h-9 w-36 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <div className="flex items-center rounded-md border border-border">
-              <button
-                type="button"
-                onClick={() => updateParam("view", "grid")}
-                className={cn(
-                  "rounded-l-md p-2 transition-colors duration-150",
-                  view === "grid"
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="Grid view"
-              >
-                <LayoutGrid className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => updateParam("view", "list")}
-                className={cn(
-                  "rounded-r-md p-2 transition-colors duration-150",
-                  view === "list"
-                    ? "bg-secondary text-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-                aria-label="List view"
-              >
-                <List className="h-4 w-4" />
-              </button>
-            </div>
           </div>
         </div>
 

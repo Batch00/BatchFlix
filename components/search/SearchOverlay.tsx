@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { RefreshCw } from "lucide-react";
 import { SearchResultRow } from "./SearchResultRow";
 import { useSearch } from "@/hooks/useSearch";
 import { toast } from "@/lib/toast";
@@ -30,18 +31,21 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const { results, isLoading } = useSearch(query);
+  const { results, isLoading, error } = useSearch(query);
 
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+    const id = setTimeout(() => {
       setQuery("");
       setHighlightedIndex(0);
-      setTimeout(() => inputRef.current?.focus(), 50);
-    }
+      inputRef.current?.focus();
+    }, 0);
+    return () => clearTimeout(id);
   }, [isOpen]);
 
   useEffect(() => {
-    setHighlightedIndex(0);
+    const id = setTimeout(() => setHighlightedIndex(0), 0);
+    return () => clearTimeout(id);
   }, [results]);
 
   const navigate = useCallback(
@@ -116,16 +120,19 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
     ? `Add to ${listMode.listName}...`
     : "Search movies and TV shows...";
 
+  const showResults = isLoading || query.length >= 2;
+
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/* Mobile: full-screen. Desktop: centered panel */}
       <div
-        className="mx-auto mt-16 w-full max-w-2xl px-4 md:mt-24"
+        className="flex h-full flex-col md:mx-auto md:mt-24 md:h-auto md:max-w-2xl md:px-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#111111] shadow-2xl">
+        <div className="flex flex-1 flex-col overflow-hidden bg-[#111111] animate-[fadeIn_0.15s_ease-out] md:rounded-xl md:border md:border-[#1f1f1f] md:shadow-2xl">
           {listMode && (
             <div className="border-b border-[#1f1f1f] px-4 py-2">
               <span className="text-xs text-muted-foreground">
@@ -136,6 +143,7 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
               </span>
             </div>
           )}
+
           <input
             ref={inputRef}
             type="text"
@@ -146,9 +154,9 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
             className="w-full bg-transparent px-4 py-4 text-base text-foreground outline-none placeholder:text-muted-foreground"
           />
 
-          {(isLoading || query.length >= 2) && (
+          {showResults && (
             <div className="border-t border-[#1f1f1f]">
-              <div className="max-h-[480px] overflow-y-auto">
+              <div className="flex-1 overflow-y-auto md:max-h-[480px]">
                 {isLoading && (
                   <>
                     <SkeletonRow />
@@ -157,13 +165,23 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
                   </>
                 )}
 
-                {!isLoading && results.length === 0 && query.length >= 2 && (
-                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    No results for &ldquo;{query}&rdquo;
-                  </p>
+                {!isLoading && error && (
+                  <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      Search unavailable. Try again.
+                    </p>
+                  </div>
                 )}
 
-                {!isLoading &&
+                {!isLoading && !error && results.length === 0 &&
+                  query.length >= 2 && (
+                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      No results for &ldquo;{query}&rdquo;
+                    </p>
+                  )}
+
+                {!isLoading && !error &&
                   results.map((result, i) => (
                     <SearchResultRow
                       key={`${result.media_type}-${result.id}`}
@@ -174,6 +192,14 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
                     />
                   ))}
               </div>
+            </div>
+          )}
+
+          {!showResults && (
+            <div className="border-t border-[#1f1f1f] px-4 py-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Type to search movies and TV shows
+              </p>
             </div>
           )}
         </div>

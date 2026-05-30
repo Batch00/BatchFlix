@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pin } from "lucide-react";
+import { Pin, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -123,7 +123,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
                   onClick={() => setColor(c.hex)}
                   aria-label={c.hex}
                   className={cn(
-                    "h-6 w-6 rounded-full transition-all",
+                    "h-6 w-6 rounded-full transition-all duration-150",
                     c.bg,
                     color === c.hex
                       ? "ring-2 ring-white ring-offset-2 ring-offset-[#111111]"
@@ -156,7 +156,14 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saving || !name.trim()}>
-            {saving ? "Saving..." : "Save"}
+            {saving ? (
+              <>
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

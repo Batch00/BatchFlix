@@ -45,9 +45,15 @@ type SortableItemProps = {
   onRemove: (mediaId: string) => void;
 };
 
-function SortableItem({ item, listId, onRemove }: SortableItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: item.id });
+function SortableItem({ item, onRemove }: SortableItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
   const m = item.media_items;
   const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
 
@@ -71,7 +77,7 @@ function SortableItem({ item, listId, onRemove }: SortableItemProps) {
     >
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
-        className="block overflow-hidden rounded-lg border border-border bg-card transition-transform hover:scale-[1.02]"
+        className="block overflow-hidden rounded-lg border border-border bg-card transition-transform duration-150 hover:scale-[1.02]"
         onClick={(e) => {
           if (isDragging) e.preventDefault();
         }}
@@ -104,7 +110,7 @@ function SortableItem({ item, listId, onRemove }: SortableItemProps) {
             />
           )}
 
-          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <p className="line-clamp-2 text-xs font-medium text-white">
               {m.title}
             </p>
@@ -187,6 +193,7 @@ export function ListDetailContent({ list }: Props) {
           body: JSON.stringify({ mediaId }),
         });
         if (!res.ok) throw new Error();
+        toast.success("Removed from list");
         router.refresh();
       } catch {
         setItems(prev);
@@ -205,12 +212,12 @@ export function ListDetailContent({ list }: Props) {
         <div className="flex flex-col gap-1">
           <Link
             href="/lists"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
             Lists
           </Link>
-          <div className="flex items-center gap-2.5 mt-1">
+          <div className="mt-1 flex items-center gap-2.5">
             {!isFavorites && (
               <span
                 className={cn("h-3 w-3 flex-shrink-0 rounded-full", colorClass)}
@@ -219,11 +226,11 @@ export function ListDetailContent({ list }: Props) {
             <h1 className="text-3xl font-bold text-foreground">{list.name}</h1>
           </div>
           {list.description && (
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="mt-1 text-sm text-muted-foreground">
               {list.description}
             </p>
           )}
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="mt-1 text-sm text-muted-foreground">
             {items.length} {items.length === 1 ? "item" : "items"}
           </p>
         </div>
@@ -240,8 +247,12 @@ export function ListDetailContent({ list }: Props) {
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <p className="text-sm text-muted-foreground">
-            No items in this list yet.
+          <Film className="mb-4 h-12 w-12 text-muted-foreground/40" />
+          <h2 className="text-lg font-semibold text-foreground">
+            This list is empty
+          </h2>
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Add items by searching or from any media page.
           </p>
           <Button
             variant="outline"

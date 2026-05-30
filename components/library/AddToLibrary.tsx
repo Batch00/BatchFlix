@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Heart, X } from "lucide-react";
+import { Pencil, Heart, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "./StarRating";
@@ -32,7 +32,6 @@ const STATUS_COLORS: Record<Status, string> = {
 };
 
 export function AddToLibrary({
-  mediaId,
   tmdbId,
   mediaType,
   initialUserMedia,
@@ -84,6 +83,7 @@ export function AddToLibrary({
         if (!res.ok) throw new Error("Update failed");
         const updated = await res.json();
         setUserMedia({ ...userMedia, ...updated });
+        toast.success("Updated");
       } else {
         const res = await fetch("/api/library/add", {
           method: "POST",
@@ -101,9 +101,9 @@ export function AddToLibrary({
         const created = await res.json();
         setUserMedia({ ...created, media_items: null } as UserMediaRow);
         router.refresh();
+        toast.success("Added to library");
       }
       setPanelOpen(false);
-      toast.success(userMedia ? "Library updated" : "Added to library");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
@@ -150,6 +150,7 @@ export function AddToLibrary({
           }
         }
       }
+      toast.success(newFav ? "Added to Favorites" : "Removed from Favorites");
     } catch {
       toast.error("Could not update favorite.");
     } finally {
@@ -158,12 +159,12 @@ export function AddToLibrary({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex w-full flex-col gap-3">
       {userMedia && !panelOpen && (
         <div className="flex flex-wrap items-center gap-2">
           <span
             className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium",
+              "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
               STATUS_COLORS[userMedia.status]
             )}
           >
@@ -175,7 +176,7 @@ export function AddToLibrary({
           <button
             type="button"
             onClick={openPanel}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
             aria-label="Edit library entry"
           >
             <Pencil className="h-4 w-4" />
@@ -184,8 +185,10 @@ export function AddToLibrary({
             type="button"
             onClick={toggleFavorite}
             disabled={toggling}
-            className="rounded-md p-1.5 transition-colors hover:bg-secondary"
-            aria-label={userMedia.is_favorite ? "Remove from favorites" : "Add to favorites"}
+            className="rounded-md p-1.5 transition-colors duration-150 hover:bg-secondary"
+            aria-label={
+              userMedia.is_favorite ? "Remove from favorites" : "Add to favorites"
+            }
           >
             <Heart
               className={cn(
@@ -228,7 +231,7 @@ export function AddToLibrary({
                 type="button"
                 onClick={() => handleStatusChange(s)}
                 className={cn(
-                  "flex-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                  "flex-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
                   status === s
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
@@ -270,7 +273,14 @@ export function AddToLibrary({
 
           <div className="flex gap-2">
             <Button onClick={handleSave} disabled={saving} className="flex-1">
-              {saving ? "Saving..." : "Save"}
+              {saving ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                "Save"
+              )}
             </Button>
             <Button
               type="button"

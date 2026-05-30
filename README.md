@@ -2,10 +2,20 @@
 
 Personal movie and TV tracker. Part of the [Batch Apps](https://batch-apps.com) suite, hosted at [batchflix.batch-apps.com](https://batchflix.batch-apps.com).
 
+## Features
+
+- **Library** -- track movies and TV shows with statuses: Watchlist, Watching, Watched
+- **Search** -- search TMDB and add items in seconds (Cmd+K)
+- **Ratings** -- 5-star ratings, watched dates, and personal notes
+- **Lists** -- create custom collections with drag-to-reorder
+- **Favorites** -- heart any item to add it to your Favorites list
+- **Stats** -- genre breakdown, decade chart, rating distribution, monthly heatmap, top rated
+- **Onboarding** -- guided setup for new users
+
 ## Stack
 
-- **Next.js 15** (App Router, TypeScript)
-- **shadcn/ui** + Tailwind CSS
+- **Next.js 16** (App Router, TypeScript)
+- **shadcn/ui** + Tailwind CSS v4
 - **Supabase** (shared Batch Apps project, `batchflix` schema)
 - **TMDB API** (proxied through `/api/tmdb`)
 - **Resend** (transactional email)
@@ -35,7 +45,7 @@ cp .env.example .env.local
 # fill in .env.local values
 ```
 
-Run the database schema against your Supabase project (SQL editor or CLI):
+Run the database schema against your Supabase project:
 
 ```bash
 psql "$DATABASE_URL" -f supabase/schema.sql
@@ -46,6 +56,25 @@ Start the dev server:
 ```bash
 npm run dev
 ```
+
+## Scripts
+
+See [scripts/README.md](scripts/README.md) for details on the import script.
+
+```bash
+# Import historical watch history from a CSV file
+npx ts-node scripts/import-history.ts
+```
+
+## Schema
+
+All tables live in the `batchflix` schema in Supabase (not `public`). See [supabase/schema.sql](supabase/schema.sql) for the full schema definition.
+
+Key tables:
+- `batchflix.media_items` -- canonical TMDB metadata cache
+- `batchflix.user_media` -- per-user watch status, ratings, notes
+- `batchflix.lists` -- user-created collections
+- `batchflix.list_items` -- items in each list with ordering
 
 ## Deploy
 

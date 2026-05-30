@@ -10,15 +10,18 @@ export function useSearch(query: string) {
 
   useEffect(() => {
     if (query.length < 2) {
-      setResults([]);
-      setError(null);
-      setIsLoading(false);
-      return;
+      const id = setTimeout(() => {
+        setResults([]);
+        setError(null);
+        setIsLoading(false);
+      }, 0);
+      return () => clearTimeout(id);
     }
 
-    setIsLoading(true);
+    let cancelled = false;
 
     const timer = setTimeout(async () => {
+      setIsLoading(true);
       try {
         const params = new URLSearchParams({
           query,
@@ -32,16 +35,22 @@ export function useSearch(query: string) {
         const filtered = (data.results as TMDBSearchMultiResult[]).filter(
           (r) => r.media_type !== "person"
         );
-        setResults(filtered);
+        if (!cancelled) {
+          setResults(filtered);
+          setError(null);
+        }
       } catch {
-        setError("Search failed. Please try again.");
-        setResults([]);
+        if (!cancelled) {
+          setError("Search failed. Please try again.");
+          setResults([]);
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     }, 300);
 
     return () => {
+      cancelled = true;
       clearTimeout(timer);
     };
   }, [query]);

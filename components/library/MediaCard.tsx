@@ -28,7 +28,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
   return (
     <Link
       href={`/media/${m.media_type}/${m.tmdb_id}`}
-      className="group relative overflow-hidden rounded-lg border border-border bg-card transition-transform hover:scale-[1.02]"
+      className="group relative overflow-hidden rounded-lg border border-border bg-card transition-transform duration-150 hover:scale-[1.02]"
     >
       <div className="relative aspect-[2/3] w-full overflow-hidden">
         {m.poster_path ? (
@@ -51,7 +51,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
 
         <StatusDot status={status} />
 
-        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <p className="line-clamp-2 text-xs font-medium text-white">
             {m.title}
           </p>

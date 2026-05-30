@@ -33,14 +33,14 @@ export function TimeRangeSelector({ current }: Props) {
   }
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex gap-2 overflow-x-auto pb-1">
       {PILLS.map((pill) => (
         <button
           key={pill.value}
           type="button"
           onClick={() => handleSelect(pill.value)}
           className={cn(
-            "rounded-full border px-3 py-1 text-sm font-medium transition-colors",
+            "flex-shrink-0 rounded-full border px-3 py-1 text-sm font-medium transition-colors duration-150",
             current === pill.value
               ? "border-primary bg-primary text-primary-foreground"
               : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"

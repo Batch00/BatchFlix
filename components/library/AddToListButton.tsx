@@ -33,12 +33,17 @@ export function AddToListButton({ mediaId }: Props) {
 
   useEffect(() => {
     if (!open) return;
-    setLoading(true);
-    Promise.all([
-      fetch("/api/lists").then((r) => r.json()),
-      fetch(`/api/lists/membership?mediaId=${mediaId}`).then((r) => r.json()),
-    ])
-      .then(([listsData, membershipData]) => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      try {
+        const [listsData, membershipData] = await Promise.all([
+          fetch("/api/lists").then((r) => r.json()),
+          fetch(`/api/lists/membership?mediaId=${mediaId}`).then((r) =>
+            r.json()
+          ),
+        ]);
+        if (cancelled) return;
         const memberSet = new Set<string>(
           (membershipData as Array<{ list_id: string }>).map((m) => m.list_id)
         );
@@ -48,9 +53,14 @@ export function AddToListButton({ mediaId }: Props) {
             inList: memberSet.has(l.id),
           }))
         );
-      })
-      .catch(() => toast.error("Failed to load lists"))
-      .finally(() => setLoading(false));
+      } catch {
+        if (!cancelled) toast.error("Failed to load lists");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
   }, [open, mediaId]);
 
   async function handleToggle(list: ListState) {

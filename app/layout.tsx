@@ -11,8 +11,14 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BatchFlix",
-  description: "Your personal movie and TV tracker",
+  title: {
+    default: "BatchFlix",
+    template: "%s | BatchFlix",
+  },
+  description: "Your personal movie and TV tracker.",
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  ),
 };
 
 export default function RootLayout({

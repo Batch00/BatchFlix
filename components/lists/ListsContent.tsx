@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, List } from "lucide-react";
+import { Plus, LayoutList } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -67,12 +67,12 @@ export function ListsContent({ initialLists }: Props) {
 
       {showEmpty ? (
         <div className="flex flex-col items-center justify-center py-24 text-center">
-          <List className="mb-4 h-12 w-12 text-muted-foreground/40" />
+          <LayoutList className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <h2 className="text-lg font-semibold text-foreground">
             No lists yet
           </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Organize your watchlist into custom collections.
+          <p className="mt-1 max-w-xs text-sm text-muted-foreground">
+            Create collections to organize your library.
           </p>
           <Button className="mt-4" onClick={() => setCreateOpen(true)}>
             Create a list
@@ -96,12 +96,16 @@ export function ListsContent({ initialLists }: Props) {
       <EditListDialog
         list={editList}
         open={editList !== null}
-        onOpenChange={(v) => { if (!v) setEditList(null); }}
+        onOpenChange={(v) => {
+          if (!v) setEditList(null);
+        }}
       />
 
       <AlertDialog
         open={deleteList !== null}
-        onOpenChange={(v) => { if (!v) setDeleteList(null); }}
+        onOpenChange={(v) => {
+          if (!v) setDeleteList(null);
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>

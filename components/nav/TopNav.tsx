@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Menu, X, User, Search } from "lucide-react";
+import { Menu, X, User, Search, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSearchContext } from "@/components/search/SearchProvider";
 
@@ -13,10 +13,16 @@ const navLinks = [
   { href: "/stats", label: "Stats" },
 ];
 
-export function TopNav() {
+type Props = {
+  favoritesListId: string | null;
+};
+
+export function TopNav({ favoritesListId }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { open } = useSearchContext();
+
+  const favHref = favoritesListId ? `/lists/${favoritesListId}` : "/lists";
 
   return (
     <header className="h-14 border-b border-border bg-card">
@@ -60,6 +66,14 @@ export function TopNav() {
             </span>
           </button>
 
+          <Link
+            href={favHref}
+            aria-label="Favorites"
+            className="hidden items-center justify-center rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground md:flex"
+          >
+            <Heart className="h-4 w-4" />
+          </Link>
+
           <div className="hidden h-8 w-8 items-center justify-center rounded-full bg-secondary md:flex">
             <User className="h-4 w-4 text-muted-foreground" />
           </div>
@@ -97,6 +111,14 @@ export function TopNav() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href={favHref}
+              onClick={() => setMobileOpen(false)}
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            >
+              <Heart className="h-4 w-4" />
+              Favorites
+            </Link>
           </nav>
         </div>
       )}

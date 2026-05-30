@@ -1,0 +1,74 @@
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import { Film, Tv } from "lucide-react";
+import type { TopRatedItem } from "@/lib/queries/stats";
+
+type Props = {
+  items: TopRatedItem[];
+};
+
+export function TopRatedList({ items }: Props) {
+  if (items.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">No rated titles yet.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((item, i) => {
+        const year = item.releaseDate
+          ? new Date(item.releaseDate).getFullYear()
+          : null;
+        const displayRating = (item.rating / 2).toFixed(1);
+
+        return (
+          <Link
+            key={item.id}
+            href={`/media/${item.mediaType}/${item.tmdbId}`}
+            className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/50"
+          >
+            <span className="w-5 flex-shrink-0 text-right font-mono text-sm text-muted-foreground">
+              {i + 1}
+            </span>
+            <div className="relative h-12 w-8 flex-shrink-0 overflow-hidden rounded">
+              {item.posterPath ? (
+                <Image
+                  src={`https://image.tmdb.org/t/p/w92${item.posterPath}`}
+                  alt={item.title}
+                  fill
+                  className="object-cover"
+                  sizes="32px"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-secondary">
+                  {item.mediaType === "movie" ? (
+                    <Film className="h-3 w-3 text-muted-foreground" />
+                  ) : (
+                    <Tv className="h-3 w-3 text-muted-foreground" />
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-medium text-foreground">
+                {item.title}
+              </p>
+              {year && (
+                <p className="text-xs text-muted-foreground">{year}</p>
+              )}
+            </div>
+            <span className="flex-shrink-0 text-sm font-semibold text-primary">
+              {displayRating}
+              <span className="ml-0.5 text-xs font-normal text-muted-foreground">
+                / 5
+              </span>
+            </span>
+          </Link>
+        );
+      })}
+    </div>
+  );
+}

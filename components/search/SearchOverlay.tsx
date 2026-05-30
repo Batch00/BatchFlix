@@ -4,10 +4,13 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { SearchResultRow } from "./SearchResultRow";
 import { useSearch } from "@/hooks/useSearch";
+import { toast } from "@/lib/toast";
+import type { ListMode } from "./SearchProvider";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  listMode: ListMode | null;
 };
 
 function SkeletonRow() {
@@ -22,7 +25,7 @@ function SkeletonRow() {
   );
 }
 
-export function SearchOverlay({ isOpen, onClose }: Props) {
+export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -51,6 +54,44 @@ export function SearchOverlay({ isOpen, onClose }: Props) {
     [results, router, onClose]
   );
 
+  const addToList = useCallback(
+    async (index: number) => {
+      const result = results[index];
+      if (!result || !listMode) return;
+      try {
+        const res = await fetch(`/api/lists/${listMode.listId}/items`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tmdbId: result.id,
+            mediaType: result.media_type,
+          }),
+        });
+        if (res.ok) {
+          toast.success(`Added to ${listMode.listName}`);
+        } else if (res.status === 409) {
+          toast.error("Already in list");
+        } else {
+          toast.error("Failed to add to list");
+        }
+      } catch {
+        toast.error("Failed to add to list");
+      }
+    },
+    [results, listMode]
+  );
+
+  const handleSelect = useCallback(
+    (index: number) => {
+      if (listMode) {
+        addToList(index);
+      } else {
+        navigate(index);
+      }
+    },
+    [listMode, addToList, navigate]
+  );
+
   function onKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
       onClose();
@@ -65,11 +106,15 @@ export function SearchOverlay({ isOpen, onClose }: Props) {
         i === 0 ? Math.max(results.length - 1, 0) : i - 1
       );
     } else if (e.key === "Enter") {
-      navigate(highlightedIndex);
+      handleSelect(highlightedIndex);
     }
   }
 
   if (!isOpen) return null;
+
+  const placeholder = listMode
+    ? `Add to ${listMode.listName}...`
+    : "Search movies and TV shows...";
 
   return (
     <div
@@ -81,13 +126,23 @@ export function SearchOverlay({ isOpen, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="overflow-hidden rounded-xl border border-[#1f1f1f] bg-[#111111] shadow-2xl">
+          {listMode && (
+            <div className="border-b border-[#1f1f1f] px-4 py-2">
+              <span className="text-xs text-muted-foreground">
+                Adding to{" "}
+                <span className="font-medium text-foreground">
+                  {listMode.listName}
+                </span>
+              </span>
+            </div>
+          )}
           <input
             ref={inputRef}
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="Search movies and TV shows..."
+            placeholder={placeholder}
             className="w-full bg-transparent px-4 py-4 text-base text-foreground outline-none placeholder:text-muted-foreground"
           />
 
@@ -115,7 +170,7 @@ export function SearchOverlay({ isOpen, onClose }: Props) {
                       result={result}
                       inLibrary={false}
                       highlighted={i === highlightedIndex}
-                      onClick={() => navigate(i)}
+                      onClick={() => handleSelect(i)}
                     />
                   ))}
               </div>

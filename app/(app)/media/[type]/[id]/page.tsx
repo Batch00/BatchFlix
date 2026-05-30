@@ -12,6 +12,7 @@ import {
 } from "@/lib/tmdb";
 import { getUserMediaByTmdbId } from "@/lib/queries/library";
 import { AddToLibrary } from "@/components/library/AddToLibrary";
+import { AddToListButton } from "@/components/library/AddToListButton";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -210,6 +211,9 @@ export default async function MediaDetailPage({
               mediaType={mediaType}
               initialUserMedia={userMedia}
             />
+            {mediaItem?.id && (
+              <AddToListButton mediaId={mediaItem.id} />
+            )}
           </div>
         </div>
 

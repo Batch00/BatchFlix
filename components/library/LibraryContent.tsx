@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { LayoutGrid, List, Clapperboard } from "lucide-react";
+import { LayoutGrid, List, Clapperboard, Heart } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -46,9 +47,10 @@ type Props = {
   status: Status;
   sort: Sort;
   view: View;
+  favoritesListId: string | null;
 };
 
-export function LibraryContent({ initialItems, status, sort, view }: Props) {
+export function LibraryContent({ initialItems, status, sort, view, favoritesListId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -69,9 +71,20 @@ export function LibraryContent({ initialItems, status, sort, view }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Library</h1>
-        <span className="text-sm text-muted-foreground">{items.length} items</span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-baseline gap-3">
+          <h1 className="text-2xl font-bold text-foreground">Library</h1>
+          <span className="text-sm text-muted-foreground">{items.length} items</span>
+        </div>
+        {favoritesListId && (
+          <Link
+            href={`/lists/${favoritesListId}`}
+            className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          >
+            <Heart className="h-4 w-4" />
+            Favorites
+          </Link>
+        )}
       </div>
 
       {/* Toolbar */}

@@ -1,12 +1,24 @@
+import { createClient } from "@/lib/supabase/server";
+import { getFavoritesListId } from "@/lib/queries/lists";
 import { TopNav } from "@/components/nav/TopNav";
-// TODO: import { DemoBanner } from "@/components/ui/DemoBanner";
-// Render <DemoBanner /> between <TopNav /> and <main> once demo auth is wired up
 
-export default function AppLayout({ children }: { children: React.ReactNode }) {
+export default async function AppLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const favoritesListId = user
+    ? await getFavoritesListId(supabase, user.id)
+    : null;
+
   return (
     <>
-      <TopNav />
-      {/* TODO: <DemoBanner /> -- add here once demo mode auth is implemented */}
+      <TopNav favoritesListId={favoritesListId} />
       <main className="min-h-[calc(100vh-3.5rem)]">{children}</main>
     </>
   );

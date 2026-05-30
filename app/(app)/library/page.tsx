@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserLibrary } from "@/lib/queries/library";
+import { getFavoritesListId } from "@/lib/queries/lists";
 import { LibraryContent } from "@/components/library/LibraryContent";
 
 type SearchParams = Promise<{
@@ -42,11 +43,10 @@ export default async function LibraryPage({
     ? (rawView as View)
     : "grid";
 
-  const items = await getUserLibrary(
-    supabase,
-    user.id,
-    status === "all" ? { sort } : { status, sort }
-  );
+  const [items, favoritesListId] = await Promise.all([
+    getUserLibrary(supabase, user.id, status === "all" ? { sort } : { status, sort }),
+    getFavoritesListId(supabase, user.id),
+  ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
@@ -55,6 +55,7 @@ export default async function LibraryPage({
         status={status}
         sort={sort}
         view={view}
+        favoritesListId={favoritesListId}
       />
     </div>
   );

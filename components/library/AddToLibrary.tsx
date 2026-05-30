@@ -114,17 +114,42 @@ export function AddToLibrary({
   async function toggleFavorite() {
     if (!userMedia) return;
     setToggling(true);
+    const newFav = !userMedia.is_favorite;
     try {
       const res = await fetch("/api/library/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           userMediaId: userMedia.id,
-          isFavorite: !userMedia.is_favorite,
+          isFavorite: newFav,
         }),
       });
       if (!res.ok) throw new Error("Update failed");
-      setUserMedia({ ...userMedia, is_favorite: !userMedia.is_favorite });
+      setUserMedia({ ...userMedia, is_favorite: newFav });
+
+      // Sync with Favorites list
+      const listsRes = await fetch("/api/lists");
+      if (listsRes.ok) {
+        const lists = await listsRes.json();
+        const favList = (lists as Array<{ id: string; name: string }>).find(
+          (l) => l.name === "Favorites"
+        );
+        if (favList && userMedia.media_id) {
+          if (newFav) {
+            await fetch(`/api/lists/${favList.id}/items`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mediaId: userMedia.media_id }),
+            });
+          } else {
+            await fetch(`/api/lists/${favList.id}/items`, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ mediaId: userMedia.media_id }),
+            });
+          }
+        }
+      }
     } catch {
       toast.error("Could not update favorite.");
     } finally {

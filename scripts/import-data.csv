@@ -1,0 +1,353 @@
+title,year,type,status,watched_date,rating
+Knives Out,2019,movie,watched,2021-01-15,8
+Glass Onion: A Knives Out Mystery,2022,movie,watched,2021-01-22,7
+Star Wars: A New Hope,1977,movie,watched,2021-01-29,9
+Star Wars: The Empire Strikes Back,1980,movie,watched,2021-02-05,9
+Star Wars: Return of the Jedi,1983,movie,watched,2021-02-12,8
+Star Wars: The Phantom Menace,1999,movie,watched,2021-02-19,7
+Star Wars: Attack of the Clones,2002,movie,watched,2021-02-26,7
+Star Wars: Revenge of the Sith,2005,movie,watched,2021-03-05,8
+Star Wars: The Force Awakens,2015,movie,watched,2021-03-12,8
+Star Wars: The Last Jedi,2017,movie,watched,2021-03-19,7
+Star Wars: The Rise of Skywalker,2019,movie,watched,2021-03-26,7
+Now You See Me,2013,movie,watched,2021-04-02,7
+Now You See Me 2,2016,movie,watched,2021-04-09,7
+X-Men,2000,movie,watched,2021-04-16,7
+X2: X-Men United,2003,movie,watched,2021-04-23,8
+X-Men: The Last Stand,2006,movie,watched,2021-04-30,7
+X-Men: First Class,2011,movie,watched,2021-05-07,8
+X-Men: Days of Future Past,2014,movie,watched,2021-05-14,8
+X-Men: Apocalypse,2016,movie,watched,2021-05-21,7
+Dark Phoenix,2019,movie,watched,2021-05-28,6
+Deadpool,2016,movie,watched,2021-06-04,8
+Deadpool 2,2018,movie,watched,2021-06-11,8
+Deadpool & Wolverine,2024,movie,watched,2021-06-18,8
+Kung Fu Panda,2008,movie,watched,2021-06-25,8
+Kung Fu Panda 2,2011,movie,watched,2021-07-02,7
+Kung Fu Panda 3,2016,movie,watched,2021-07-09,7
+Kung Fu Panda 4,2024,movie,watched,2021-07-16,7
+Avatar,2009,movie,watched,2021-07-23,8
+Avatar: The Way of Water,2022,movie,watched,2021-07-30,8
+Batman Begins,2005,movie,watched,2021-08-06,8
+The Dark Knight,2008,movie,watched,2021-08-13,9
+The Dark Knight Rises,2012,movie,watched,2021-08-20,8
+Mission: Impossible,1996,movie,watched,2021-08-27,7
+Mission: Impossible 2,2000,movie,watched,2021-09-03,6
+Mission: Impossible III,2006,movie,watched,2021-09-10,7
+Mission: Impossible - Ghost Protocol,2011,movie,watched,2021-09-17,8
+Mission: Impossible - Rogue Nation,2015,movie,watched,2021-09-24,8
+Mission: Impossible - Fallout,2018,movie,watched,2021-10-01,8
+Mission: Impossible - Dead Reckoning Part One,2023,movie,watched,2021-10-08,8
+Creed,2015,movie,watched,2021-10-15,8
+Creed II,2018,movie,watched,2021-10-22,7
+Creed III,2023,movie,watched,2021-10-29,7
+Rocky,1976,movie,watched,2021-11-05,8
+Rocky II,1979,movie,watched,2021-11-12,8
+Rocky III,1982,movie,watched,2021-11-19,7
+Rocky IV,1985,movie,watched,2021-11-26,7
+Rocky V,1990,movie,watched,2021-12-03,5
+Rocky Balboa,2006,movie,watched,2021-12-10,8
+Ocean's Eleven,2001,movie,watched,2021-12-17,8
+Ocean's Twelve,2004,movie,watched,2021-12-24,7
+Ocean's Thirteen,2007,movie,watched,2021-12-31,7
+Ocean's 8,2018,movie,watched,2022-01-07,7
+The Godfather,1972,movie,watched,2022-01-14,9
+The Godfather Part II,1974,movie,watched,2022-01-21,9
+The Godfather Part III,1990,movie,watched,2022-01-28,8
+Raiders of the Lost Ark,1981,movie,watched,2022-02-04,9
+Indiana Jones and the Temple of Doom,1984,movie,watched,2022-02-11,8
+Indiana Jones and the Last Crusade,1989,movie,watched,2022-02-18,8
+Indiana Jones and the Kingdom of the Crystal Skull,2008,movie,watched,2022-02-25,6
+Indiana Jones and the Dial of Destiny,2023,movie,watched,2022-03-04,6
+Harry Potter and the Sorcerer's Stone,2001,movie,watched,2022-03-11,8
+Harry Potter and the Chamber of Secrets,2002,movie,watched,2022-03-18,8
+Harry Potter and the Prisoner of Azkaban,2004,movie,watched,2022-03-25,8
+Harry Potter and the Goblet of Fire,2005,movie,watched,2022-04-01,8
+Harry Potter and the Order of the Phoenix,2007,movie,watched,2022-04-08,8
+Harry Potter and the Half-Blood Prince,2009,movie,watched,2022-04-15,8
+Harry Potter and the Deathly Hallows Part 1,2010,movie,watched,2022-04-22,8
+Harry Potter and the Deathly Hallows Part 2,2011,movie,watched,2022-04-29,8
+Pirates of the Caribbean: The Curse of the Black Pearl,2003,movie,watched,2022-05-06,8
+Pirates of the Caribbean: Dead Man's Chest,2006,movie,watched,2022-05-13,8
+Pirates of the Caribbean: At World's End,2007,movie,watched,2022-05-20,7
+Pirates of the Caribbean: On Stranger Tides,2011,movie,watched,2022-05-27,7
+Pirates of the Caribbean: Dead Men Tell No Tales,2017,movie,watched,2022-06-03,7
+The Matrix,1999,movie,watched,2022-06-10,9
+The Matrix Reloaded,2003,movie,watched,2022-06-17,7
+The Matrix Revolutions,2003,movie,watched,2022-06-24,7
+The Matrix Resurrections,2021,movie,watched,2022-07-01,6
+John Wick,2014,movie,watched,2022-07-08,7
+John Wick: Chapter 2,2017,movie,watched,2022-07-15,8
+John Wick: Chapter 3 - Parabellum,2019,movie,watched,2022-07-22,7
+John Wick: Chapter 4,2023,movie,watched,2022-07-29,8
+The Lord of the Rings: The Fellowship of the Ring,2001,movie,watched,2022-08-05,9
+The Lord of the Rings: The Two Towers,2002,movie,watched,2022-08-12,9
+The Lord of the Rings: The Return of the King,2003,movie,watched,2022-08-19,9
+The Fast and the Furious,2001,movie,watched,2022-08-26,7
+2 Fast 2 Furious,2003,movie,watched,2022-09-02,6
+The Fast and the Furious: Tokyo Drift,2006,movie,watched,2022-09-09,6
+Fast & Furious,2009,movie,watched,2022-09-16,7
+Fast Five,2011,movie,watched,2022-09-23,7
+Fast & Furious 6,2013,movie,watched,2022-09-30,7
+Furious 7,2015,movie,watched,2022-10-07,7
+The Fate of the Furious,2017,movie,watched,2022-10-14,7
+Fast & Furious Presents: Hobbs & Shaw,2019,movie,watched,2022-10-21,7
+F9: The Fast Saga,2021,movie,watched,2022-10-28,6
+Fast X,2023,movie,watched,2022-11-04,6
+Casino Royale,2006,movie,watched,2022-11-11,8
+Quantum of Solace,2008,movie,watched,2022-11-18,7
+Skyfall,2012,movie,watched,2022-11-25,8
+Spectre,2015,movie,watched,2022-12-02,7
+No Time to Die,2021,movie,watched,2022-12-09,7
+Game of Thrones,,tv,watched,2022-12-16,9
+Breaking Bad,,tv,watched,2022-12-23,10
+Reacher,,tv,watched,2022-12-30,8
+Kaleidoscope,,tv,watched,2023-01-06,7
+Moon Knight,,tv,watched,2023-01-13,7
+Better Call Saul,,tv,watched,2023-01-20,9
+The Witcher: Blood Origin,,tv,watched,2023-01-27,6
+Dahmer - Monster: The Jeffrey Dahmer Story,,tv,watched,2023-02-03,7
+The Last of Us,,tv,watched,2023-02-10,9
+Peaky Blinders,,tv,watched,2023-02-17,9
+The Night Agent,,tv,watched,2023-02-24,8
+You,,tv,watched,2023-03-03,8
+The Wire,,tv,watched,2023-03-10,9
+The Sopranos,,tv,watched,2023-03-17,9
+One Piece,,tv,watched,2023-03-24,9
+The Witcher,,tv,watched,2023-03-31,8
+Loki,,tv,watched,2023-04-07,8
+The Mandalorian,,tv,watched,2023-04-14,9
+The Book of Boba Fett,,tv,watched,2023-04-21,7
+Obi-Wan Kenobi,,tv,watched,2023-04-28,7
+Andor,,tv,watched,2023-05-05,9
+Ahsoka,,tv,watched,2023-05-12,7
+Star Wars: The Clone Wars,,tv,watched,2023-05-19,9
+Band of Brothers,,tv,watched,2023-05-26,10
+Outer Banks,,tv,watched,2023-06-02,8
+Stranger Things,,tv,watched,2023-06-09,9
+House of the Dragon,,tv,watched,2023-06-16,8
+The Lord of the Rings: The Rings of Power,,tv,watched,2023-06-23,7
+The Penguin,,tv,watched,2023-06-30,9
+Squid Game,,tv,watched,2023-07-07,8
+Percy Jackson and the Olympians,,tv,watched,2023-07-14,8
+Michael,2025,movie,watched,2023-07-21,7
+Eyes Wide Shut,1999,movie,watched,2023-07-28,7
+Valley Uprising,2014,movie,watched,2023-08-04,8
+Braveheart,1995,movie,watched,2023-08-11,8
+Stand by Me,1986,movie,watched,2023-08-18,8
+War Machine,2017,movie,watched,2023-08-25,7
+The Goonies,1985,movie,watched,2023-09-01,8
+Se7en,1995,movie,watched,2023-09-08,9
+Sinners,2025,movie,watched,2023-09-15,8
+Marty Supreme,2024,movie,watched,2023-09-22,7
+F1: The Movie,2025,movie,watched,2023-09-29,7
+Last Flag Flying,2017,movie,watched,2023-10-06,7
+Ballerina,2025,movie,watched,2023-10-13,7
+Coach Carter,2005,movie,watched,2023-10-20,7
+Thunderbolts,2025,movie,watched,2023-10-27,7
+The Untouchables,1987,movie,watched,2023-11-03,8
+The Last Samurai,2003,movie,watched,2023-11-10,8
+A Beautiful Mind,2001,movie,watched,2023-11-17,8
+American Made,2017,movie,watched,2023-11-24,7
+Scarface,1983,movie,watched,2023-12-01,8
+Jack Reacher,2012,movie,watched,2023-12-08,7
+Happy Gilmore 2,2025,movie,watched,2023-12-15,7
+The Departed,2006,movie,watched,2023-12-22,8
+The Fall Guy,2024,movie,watched,2023-12-29,7
+American Sniper,2014,movie,watched,2024-01-05,7
+American Gangster,2007,movie,watched,2024-01-12,8
+The Long Game,2023,movie,watched,2024-01-19,8
+Mufasa: The Lion King,2024,movie,watched,2024-01-26,7
+There Will Be Blood,2007,movie,watched,2024-02-02,8
+The Prince of Egypt,1998,movie,watched,2024-02-09,8
+Snatch,2000,movie,watched,2024-02-16,8
+Dunkirk,2017,movie,watched,2024-02-23,8
+Captain America: Brave New World,2025,movie,watched,2024-03-01,7
+Bohemian Rhapsody,2018,movie,watched,2024-03-08,8
+Once Upon a Time in Hollywood,2019,movie,watched,2024-03-15,8
+Miracle,2004,movie,watched,2024-03-22,7
+A Complete Unknown,2024,movie,watched,2024-03-29,8
+Tenet,2020,movie,watched,2024-04-05,7
+The Social Network,2010,movie,watched,2024-04-12,8
+A Few Good Men,1992,movie,watched,2024-04-19,8
+Wicked,2024,movie,watched,2024-04-26,8
+Gladiator II,2024,movie,watched,2024-05-03,8
+Moana 2,2024,movie,watched,2024-05-10,7
+Money Electric: The Bitcoin Mystery,2024,movie,watched,2024-05-17,7
+Pixels,2015,movie,watched,2024-05-24,6
+Mad Max: Fury Road,2015,movie,watched,2024-05-31,8
+Tropic Thunder,2008,movie,watched,2024-06-07,7
+Holes,2003,movie,watched,2024-06-14,7
+Django Unchained,2012,movie,watched,2024-06-21,8
+The Fighter,2010,movie,watched,2024-06-28,8
+Ready Player One,2018,movie,watched,2024-07-05,7
+"The Good, the Bad and the Ugly",1966,movie,watched,2024-07-12,9
+Race,2016,movie,watched,2024-07-19,7
+The Prestige,2006,movie,watched,2024-07-26,9
+Inglourious Basterds,2009,movie,watched,2024-08-02,8
+Taxi Driver,1976,movie,watched,2024-08-09,8
+It's a Wonderful Life,1946,movie,watched,2024-08-16,8
+Casablanca,1942,movie,watched,2024-08-23,9
+Moneyball,2011,movie,watched,2024-08-30,8
+The Greatest Showman,2017,movie,watched,2024-09-06,8
+Snowden,2016,movie,watched,2024-09-13,7
+2001: A Space Odyssey,1968,movie,watched,2024-09-20,8
+Schindler's List,1993,movie,watched,2024-09-27,9
+Dr. Strangelove or: How I Learned to Stop Worrying and Love the Bomb,1964,movie,watched,2024-10-04,8
+Pulp Fiction,1994,movie,watched,2024-10-11,9
+Bob Marley: One Love,2024,movie,watched,2024-10-18,8
+The Hunger Games: The Ballad of Songbirds & Snakes,2023,movie,watched,2024-10-25,7
+The Truman Show,1998,movie,watched,2024-11-01,8
+Inception,2010,movie,watched,2024-11-08,8
+Dune: Part Two,2024,movie,watched,2024-11-15,9
+Memento,2000,movie,watched,2024-11-22,8
+Casino,1995,movie,watched,2024-11-29,8
+Fences,2016,movie,watched,2024-12-06,7
+The Highwaymen,2019,movie,watched,2024-12-13,7
+Wonka,2023,movie,watched,2024-12-20,7
+Prisoners,2013,movie,watched,2024-12-27,8
+White Men Can't Jump,2023,movie,watched,2025-01-03,6
+Free Solo,2018,movie,watched,2025-01-10,8
+The Breakfast Club,1985,movie,watched,2025-01-17,8
+The Gentlemen,2019,movie,watched,2025-01-24,8
+No Country for Old Men,2007,movie,watched,2025-01-31,8
+The Green Mile,1999,movie,watched,2025-02-07,9
+A Bronx Tale,1993,movie,watched,2025-02-14,8
+The Big Short,2015,movie,watched,2025-02-21,8
+Killers of the Flower Moon,2023,movie,watched,2025-02-28,8
+Jerry and Marge Go Large,2022,movie,watched,2025-03-07,7
+Dune,2021,movie,watched,2025-03-14,8
+Oppenheimer,2023,movie,watched,2025-03-21,8
+Catch Me If You Can,2002,movie,watched,2025-03-28,8
+8 Mile,2002,movie,watched,2025-04-04,7
+Barbie,2023,movie,watched,2025-04-11,7
+Ant-Man and the Wasp: Quantumania,2023,movie,watched,2025-04-18,6
+Guardians of the Galaxy Vol. 3,2023,movie,watched,2025-04-25,8
+The Super Mario Bros. Movie,2023,movie,watched,2025-05-02,7
+The Many Saints of Newark,2021,movie,watched,2025-05-09,7
+Spider-Man: Across the Spider-Verse,2023,movie,watched,2025-05-16,9
+American Psycho,2000,movie,watched,2025-05-23,8
+Ford v Ferrari,2019,movie,watched,2025-05-30,8
+Murder Mystery 2,2023,movie,watched,2025-06-06,6
+The Usual Suspects,1995,movie,watched,2025-06-13,8
+A Man Called Otto,2022,movie,watched,2025-06-20,8
+Rain Man,1988,movie,watched,2025-06-27,8
+Goodfellas,1990,movie,watched,2025-07-04,9
+The Shawshank Redemption,1994,movie,watched,2025-07-11,9
+Saving Private Ryan,1998,movie,watched,2025-07-18,9
+Fight Club,1999,movie,watched,2025-07-25,9
+Good Will Hunting,1997,movie,watched,2025-08-01,8
+Hacksaw Ridge,2016,movie,watched,2025-08-08,8
+The Irishman,2019,movie,watched,2025-08-15,8
+El Camino: A Breaking Bad Movie,2019,movie,watched,2025-08-22,7
+21,2008,movie,watched,2025-08-29,7
+Full Metal Jacket,1987,movie,watched,2025-09-05,8
+Interstellar,2014,movie,watched,2025-09-12,8
+Top Gun: Maverick,2022,movie,watched,2025-09-19,8
+The Wolf of Wall Street,2013,movie,watched,2025-09-26,8
+The Terminator,1984,movie,watchlist,2030-01-01,
+Terminator 2: Judgment Day,1991,movie,watchlist,2030-01-01,
+Terminator 3: Rise of the Machines,2003,movie,watchlist,2030-01-01,
+Terminator Salvation,2009,movie,watchlist,2030-01-01,
+Terminator Genisys,2015,movie,watchlist,2030-01-01,
+Terminator: Dark Fate,2019,movie,watchlist,2030-01-01,
+Jurassic Park,1993,movie,watchlist,2030-01-01,
+The Lost World: Jurassic Park,1997,movie,watchlist,2030-01-01,
+Jurassic Park III,2001,movie,watchlist,2030-01-01,
+Jurassic World,2015,movie,watchlist,2030-01-01,
+Jurassic World: Fallen Kingdom,2018,movie,watchlist,2030-01-01,
+Jurassic World Dominion,2022,movie,watchlist,2030-01-01,
+Die Hard,1988,movie,watchlist,2030-01-01,
+Die Hard 2,1990,movie,watchlist,2030-01-01,
+Die Hard with a Vengeance,1995,movie,watchlist,2030-01-01,
+Live Free or Die Hard,2007,movie,watchlist,2030-01-01,
+A Good Day to Die Hard,2013,movie,watchlist,2030-01-01,
+Godzilla,2014,movie,watchlist,2030-01-01,
+Kong: Skull Island,2017,movie,watchlist,2030-01-01,
+Godzilla: King of the Monsters,2019,movie,watchlist,2030-01-01,
+Godzilla vs. Kong,2021,movie,watchlist,2030-01-01,
+Godzilla x Kong: The New Empire,2024,movie,watchlist,2030-01-01,
+Rise of the Planet of the Apes,2011,movie,watchlist,2030-01-01,
+Dawn of the Planet of the Apes,2014,movie,watchlist,2030-01-01,
+War for the Planet of the Apes,2017,movie,watchlist,2030-01-01,
+Kingdom of the Planet of the Apes,2024,movie,watchlist,2030-01-01,
+Shaun of the Dead,2004,movie,watchlist,2030-01-01,
+Hot Fuzz,2007,movie,watchlist,2030-01-01,
+The World's End,2013,movie,watchlist,2030-01-01,
+A Fistful of Dollars,1964,movie,watchlist,2030-01-01,
+For a Few Dollars More,1965,movie,watchlist,2030-01-01,
+Alien,1979,movie,watchlist,2030-01-01,
+Aliens,1986,movie,watchlist,2030-01-01,
+Alien 3,1992,movie,watchlist,2030-01-01,
+Alien: Resurrection,1997,movie,watchlist,2030-01-01,
+Prometheus,2012,movie,watchlist,2030-01-01,
+Alien: Covenant,2017,movie,watchlist,2030-01-01,
+Alien: Romulus,2024,movie,watchlist,2030-01-01,
+Man of Steel,2013,movie,watchlist,2030-01-01,
+Batman v Superman: Dawn of Justice,2016,movie,watchlist,2030-01-01,
+Suicide Squad,2016,movie,watchlist,2030-01-01,
+Wonder Woman,2017,movie,watchlist,2030-01-01,
+Justice League,2017,movie,watchlist,2030-01-01,
+Aquaman,2018,movie,watchlist,2030-01-01,
+Shazam!,2019,movie,watchlist,2030-01-01,
+Birds of Prey,2020,movie,watchlist,2030-01-01,
+Wonder Woman 1984,2020,movie,watchlist,2030-01-01,
+The Suicide Squad,2021,movie,watchlist,2030-01-01,
+Black Adam,2022,movie,watchlist,2030-01-01,
+Shazam! Fury of the Gods,2023,movie,watchlist,2030-01-01,
+The Flash,2023,movie,watchlist,2030-01-01,
+Blue Beetle,2023,movie,watchlist,2030-01-01,
+Aquaman and the Lost Kingdom,2023,movie,watchlist,2030-01-01,
+Space Jam,1996,movie,watchlist,2030-01-01,
+Space Jam: A New Legacy,2021,movie,watchlist,2030-01-01,
+Blade Runner,1982,movie,watchlist,2030-01-01,
+Blade Runner 2049,2017,movie,watchlist,2030-01-01,
+Halloween,1978,movie,watchlist,2030-01-01,
+Halloween II,1981,movie,watchlist,2030-01-01,
+Halloween,2018,movie,watchlist,2030-01-01,
+Halloween Kills,2021,movie,watchlist,2030-01-01,
+Halloween Ends,2022,movie,watchlist,2030-01-01,
+Friday the 13th,1980,movie,watchlist,2030-01-01,
+Friday the 13th Part 2,1981,movie,watchlist,2030-01-01,
+Friday the 13th Part III,1982,movie,watchlist,2030-01-01,
+Friday the 13th: The Final Chapter,1984,movie,watchlist,2030-01-01,
+Friday the 13th Part VI: Jason Lives,1986,movie,watchlist,2030-01-01,
+The Bourne Identity,2002,movie,watchlist,2030-01-01,
+The Bourne Supremacy,2004,movie,watchlist,2030-01-01,
+The Bourne Ultimatum,2007,movie,watchlist,2030-01-01,
+The Bourne Legacy,2012,movie,watchlist,2030-01-01,
+Jason Bourne,2016,movie,watchlist,2030-01-01,
+Oz,,tv,watchlist,2030-01-01,
+Mad Men,,tv,watchlist,2030-01-01,
+Rome,,tv,watchlist,2030-01-01,
+Chernobyl,,tv,watchlist,2030-01-01,
+Succession,,tv,watchlist,2030-01-01,
+Lawmen: Bass Reeves,,tv,watchlist,2030-01-01,
+Boardwalk Empire,,tv,watchlist,2030-01-01,
+Sherlock,,tv,watchlist,2030-01-01,
+Yellowstone,,tv,watchlist,2030-01-01,
+Tiger King,,tv,watchlist,2030-01-01,
+The Boys,,tv,watchlist,2030-01-01,
+Gen V,,tv,watchlist,2030-01-01,
+Vought Rising,,tv,watchlist,2030-01-01,
+The Walking Dead,,tv,watchlist,2030-01-01,
+Shameless,,tv,watchlist,2030-01-01,
+The Rookie,,tv,watchlist,2030-01-01,
+Suits,,tv,watchlist,2030-01-01,
+House M.D.,,tv,watchlist,2030-01-01,
+Ted Lasso,,tv,watchlist,2030-01-01,
+The Chosen,,tv,watchlist,2030-01-01,
+House of David,,tv,watchlist,2030-01-01,
+Monster: The Ed Gein Story,,tv,watchlist,2030-01-01,
+Fallout,,tv,watchlist,2030-01-01,
+Severance,,tv,watchlist,2030-01-01,
+Legend of Korra,,tv,watchlist,2030-01-01,
+Blood In Blood Out,1993,movie,watchlist,2030-01-01,
+Reservoir Dogs,1992,movie,watchlist,2030-01-01,
+Citizen Kane,1941,movie,watchlist,2030-01-01,
+The Parent Trap,1998,movie,watchlist,2030-01-01,
+Hell or High Water,2016,movie,watchlist,2030-01-01,
+Jaws,1975,movie,watchlist,2030-01-01,
+Jacob's Ladder,1990,movie,watchlist,2030-01-01,
+Kraven the Hunter,2024,movie,watchlist,2030-01-01,
+A Minecraft Movie,2025,movie,watchlist,2030-01-01,

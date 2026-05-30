@@ -1,8 +1,12 @@
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import { parse } from "csv-parse/sync";
 import * as dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config({ path: path.join(__dirname, "../.env.local") });
 
@@ -138,15 +142,12 @@ async function upsertMediaItem(
     tmdb_id: tmdbId,
     media_type: mediaType,
     title,
-    original_title: data.original_title ?? data.original_name ?? title,
     overview: data.overview ?? null,
     poster_path: data.poster_path ?? null,
     backdrop_path: data.backdrop_path ?? null,
     release_date: releaseDate ?? null,
     runtime: runtime ?? null,
     genres,
-    popularity: data.popularity ?? 0,
-    vote_average: data.vote_average ?? 0,
   };
 
   const { data: item, error } = await supabase

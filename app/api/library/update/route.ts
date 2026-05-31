@@ -9,6 +9,7 @@ const schema = z.object({
   watchedDate: z.string().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   isFavorite: z.boolean().optional(),
+  createdAt: z.string().nullable().optional(),
 });
 
 export async function PATCH(request: NextRequest) {
@@ -33,7 +34,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { userMediaId, status, rating, watchedDate, notes, isFavorite } =
+  const { userMediaId, status, rating, watchedDate, notes, isFavorite, createdAt } =
     parsed.data;
 
   // Fetch current row to detect status change
@@ -51,6 +52,7 @@ export async function PATCH(request: NextRequest) {
   if (watchedDate !== undefined) updates.watched_date = watchedDate;
   if (notes !== undefined) updates.notes = notes;
   if (isFavorite !== undefined) updates.is_favorite = isFavorite;
+  if (createdAt !== undefined) updates.created_at = createdAt;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

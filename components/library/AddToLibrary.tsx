@@ -63,6 +63,9 @@ export function AddToLibrary({
     initialUserMedia?.watched_date ?? ""
   );
   const [notes, setNotes] = useState(initialUserMedia?.notes ?? "");
+  const [createdAt, setCreatedAt] = useState(
+    initialUserMedia?.created_at?.slice(0, 10) ?? ""
+  );
   const [saving, setSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
@@ -126,6 +129,9 @@ export function AddToLibrary({
           watchedDate:
             activeStatus !== "watchlist" && watchedDate ? watchedDate : null,
           notes: notes || null,
+          ...(activeStatus === "watched" && createdAt
+            ? { createdAt }
+            : {}),
         }),
       });
       if (!res.ok) throw new Error();
@@ -375,17 +381,30 @@ export function AddToLibrary({
           )}
 
           {activeStatus === "watched" && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-xs text-muted-foreground">
-                Watch date
-              </label>
-              <input
-                type="date"
-                value={watchedDate}
-                onChange={(e) => setWatchedDate(e.target.value)}
-                className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-              />
-            </div>
+            <>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-muted-foreground">
+                  Watch date
+                </label>
+                <input
+                  type="date"
+                  value={watchedDate}
+                  onChange={(e) => setWatchedDate(e.target.value)}
+                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs text-muted-foreground">
+                  Date added
+                </label>
+                <input
+                  type="date"
+                  value={createdAt}
+                  onChange={(e) => setCreatedAt(e.target.value)}
+                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+                />
+              </div>
+            </>
           )}
 
           {activeStatus === "watching" && (

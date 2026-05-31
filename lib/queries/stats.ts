@@ -47,6 +47,7 @@ export type StatsItem = {
   rating: number | null;
   watched_date: string | null;
   genres: Array<{ id: number; name: string }>;
+  status: string;
 };
 
 export type TopRatedItem = {
@@ -226,6 +227,7 @@ export async function getStatsData(
     rating: r.rating,
     watched_date: r.watched_date,
     genres: parseGenres(r.media_items?.genres),
+    status: r.status,
   }));
 
   return {

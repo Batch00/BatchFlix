@@ -290,7 +290,7 @@ export function RankingList({ initialItems, listId, mediaType, listName }: Props
           className="mt-3 flex items-center gap-1.5 self-start rounded-md border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
         >
           <Plus className="h-3.5 w-3.5" />
-          Add
+          {mediaType === "movie" ? "Add Movie" : "Add TV Show"}
         </button>
       )}
     </div>

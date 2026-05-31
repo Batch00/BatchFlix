@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -136,6 +137,9 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidatePath("/lists");
+  revalidatePath(`/lists/${id}`);
 
   return NextResponse.json(data, { status: 201 });
 }

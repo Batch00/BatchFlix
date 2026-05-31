@@ -4,20 +4,24 @@ import { Film, Tv } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
 
-const STATUS_DOT: Record<string, string> = {
-  watched: "bg-primary",
-  watching: "bg-yellow-400",
-  watchlist: "bg-muted-foreground",
+const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  watched: { bg: "bg-blue-900/80", text: "text-blue-200", label: "Watched" },
+  watching: { bg: "bg-yellow-900/80", text: "text-yellow-200", label: "Watching" },
+  watchlist: { bg: "bg-zinc-800/80", text: "text-zinc-300", label: "Watchlist" },
 };
 
-function StatusDot({ status }: { status: string }) {
+function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_BADGE[status] ?? STATUS_BADGE.watchlist;
   return (
-    <span
+    <div
       className={cn(
-        "absolute bottom-2 left-2 h-2 w-2 rounded-full ring-1 ring-black/40",
-        STATUS_DOT[status] ?? "bg-muted-foreground"
+        "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
+        config.bg,
+        config.text
       )}
-    />
+    >
+      {config.label}
+    </div>
   );
 }
 
@@ -49,7 +53,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
           </div>
         )}
 
-        <StatusDot status={status} />
+        <StatusBadge status={status} />
 
         <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <p className="line-clamp-2 text-xs font-medium text-white">
@@ -58,9 +62,6 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
           {year && (
             <p className="mt-0.5 text-xs text-white/70">{year}</p>
           )}
-          <span className="mt-1 w-fit rounded-full bg-black/40 px-2 py-0.5 text-[10px] capitalize text-white/80">
-            {status}
-          </span>
         </div>
       </div>
     </Link>

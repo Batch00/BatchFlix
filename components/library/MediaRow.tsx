@@ -40,6 +40,12 @@ const STATUS_LABELS: Record<Status, string> = {
   watchlist: "Watchlist",
 };
 
+const STATUS_MOBILE_BADGE: Record<Status, string> = {
+  watched: "bg-blue-900/80 text-blue-200",
+  watching: "bg-yellow-900/80 text-yellow-200",
+  watchlist: "bg-zinc-800/80 text-zinc-300",
+};
+
 type Props = {
   item: UserMediaRow;
   onRemoved: (id: string) => void;
@@ -138,7 +144,7 @@ export function MediaRow({ item, onRemoved }: Props) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80">
+    <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80 md:items-center">
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
         className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
@@ -162,7 +168,71 @@ export function MediaRow({ item, onRemoved }: Props) {
         )}
       </Link>
 
-      <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="min-w-0 flex-1">
+      {/* Mobile two-line content */}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 md:hidden">
+        <div className="flex items-start justify-between gap-1">
+          <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
+          </Link>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <button
+                type="button"
+                className="flex-shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
+                aria-label="Remove"
+                disabled={removing}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-card border-border">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Remove from library?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  &ldquo;{m.title}&rdquo; will be removed from your library. This
+                  cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleRemove}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Remove
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          {year && <span className="text-xs text-muted-foreground">{year}</span>}
+          <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">
+            {m.media_type}
+          </span>
+          <span
+            className={cn(
+              "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+              STATUS_MOBILE_BADGE[rowStatus] ?? STATUS_MOBILE_BADGE.watchlist
+            )}
+          >
+            {STATUS_LABELS[rowStatus]}
+          </span>
+        </div>
+
+        {(rowRating > 0 || rowDate) && (
+          <div className="flex items-center gap-2">
+            {rowRating > 0 && <StarRating rating={rowRating} size={12} />}
+            {rowDate && (
+              <span className="text-xs text-muted-foreground">{formatDate(rowDate)}</span>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop single-row content */}
+      <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="hidden min-w-0 flex-1 md:block">
         <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
         <div className="mt-0.5 flex items-center gap-2">
           {year && <span className="text-xs text-muted-foreground">{year}</span>}
@@ -172,7 +242,7 @@ export function MediaRow({ item, onRemoved }: Props) {
         </div>
       </Link>
 
-      <div className="hidden items-center gap-3 sm:flex">
+      <div className="hidden items-center gap-3 md:flex">
         {/* Status badge -- click to change */}
         <Popover open={statusPopover} onOpenChange={setStatusPopover}>
           <PopoverTrigger asChild>
@@ -296,7 +366,7 @@ export function MediaRow({ item, onRemoved }: Props) {
         )}
       </div>
 
-      <div className="flex items-center gap-1">
+      <div className="hidden items-center gap-1 md:flex">
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { parseISO } from "date-fns";
 import { Heart, Loader2 } from "lucide-react";
@@ -66,8 +66,14 @@ export function AddToLibrary({
   );
   const [notes, setNotes] = useState(initialUserMedia?.notes ?? "");
   const [createdAt, setCreatedAt] = useState(
-    initialUserMedia?.created_at?.slice(0, 10) ?? ""
+    initialUserMedia?.created_at ? initialUserMedia.created_at.split('T')[0] : ""
   );
+
+  useEffect(() => {
+    setCreatedAt(
+      initialUserMedia?.created_at ? initialUserMedia.created_at.split('T')[0] : ""
+    );
+  }, [initialUserMedia]);
   const [saving, setSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [toggling, setToggling] = useState(false);

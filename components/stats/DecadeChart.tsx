@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -7,18 +8,23 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
-import type { DecadeCount } from "@/lib/queries/stats";
+import type { DecadeCount, StatsItem } from "@/lib/queries/stats";
 
 type Props = {
   data: DecadeCount[];
+  allItems?: StatsItem[];
+  onDrillDown?: (title: string, items: StatsItem[]) => void;
 };
 
 function decadeLabel(decade: number): string {
   return `${decade}s`;
 }
 
-export function DecadeChart({ data }: Props) {
+export function DecadeChart({ data, allItems, onDrillDown }: Props) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   const chartData = data.map((d) => ({
     ...d,
     label: decadeLabel(d.decade),
@@ -57,7 +63,30 @@ export function DecadeChart({ data }: Props) {
             formatter={(value) => [value, "titles"]}
             labelFormatter={(label) => `${label}`}
           />
-          <Bar dataKey="count" fill="#7c3aed" radius={[4, 4, 0, 0]} />
+          <Bar
+            dataKey="count"
+            radius={[4, 4, 0, 0]}
+            cursor={onDrillDown ? "pointer" : undefined}
+            onMouseEnter={(_, index) => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(null)}
+            onClick={(barData: unknown) => {
+              if (!onDrillDown || !allItems) return;
+              const decade = (barData as { decade: number }).decade;
+              const matches = allItems.filter((item) => {
+                if (!item.release_date) return false;
+                const year = +item.release_date.slice(0, 4);
+                return Math.floor(year / 10) * 10 === decade;
+              });
+              onDrillDown(`${decade}s`, matches);
+            }}
+          >
+            {chartData.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={index === activeIndex ? "#9333ea" : "#7c3aed"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

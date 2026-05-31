@@ -5,14 +5,14 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const GENRE_NORMALIZE: Record<string, string> = {
+export const GENRE_NORMALIZE: Record<string, string> = {
   "Science Fiction": "Sci-Fi",
   "Sci-Fi & Fantasy": "Sci-Fi",
   "Action & Adventure": "Action",
   "War & Politics": "War",
 };
 
-function normalizeGenre(name: string): string {
+export function normalizeGenre(name: string): string {
   return GENRE_NORMALIZE[name] ?? name;
 }
 
@@ -38,6 +38,17 @@ export type DecadeCount = { decade: number; count: number };
 export type RatingCount = { rating: number; count: number };
 export type MonthlyCount = { year: number; month: number; count: number };
 
+export type StatsItem = {
+  tmdb_id: number;
+  media_type: "movie" | "tv";
+  title: string;
+  poster_path: string | null;
+  release_date: string | null;
+  rating: number | null;
+  watched_date: string | null;
+  genres: Array<{ id: number; name: string }>;
+};
+
 export type TopRatedItem = {
   id: string;
   tmdbId: number;
@@ -58,6 +69,7 @@ export type StatsData = {
   ratingDistribution: RatingCount[];
   monthlyWatched: MonthlyCount[];
   topRated: TopRatedItem[];
+  allItems: StatsItem[];
 };
 
 function getDateRange(
@@ -114,16 +126,16 @@ export async function getStatsData(
   const { data, error } = await query;
   if (error) throw error;
 
-  const allItems = (data ?? []) as unknown as RawRow[];
+  const rows = (data ?? []) as unknown as RawRow[];
 
-  const totalCount = allItems.length;
-  const watchedCount = allItems.filter((r) => r.status === "watched").length;
+  const totalCount = rows.length;
+  const watchedCount = rows.filter((r) => r.status === "watched").length;
 
-  const totalMinutes = allItems
+  const totalMinutes = rows
     .filter((r) => r.status === "watched")
     .reduce((sum, r) => sum + (r.media_items?.runtime ?? 0), 0);
 
-  const ratedItems = allItems.filter((r) => r.rating !== null);
+  const ratedItems = rows.filter((r) => r.rating !== null);
   const avgRating =
     ratedItems.length > 0
       ? ratedItems.reduce((sum, r) => sum + (r.rating ?? 0), 0) /
@@ -132,7 +144,7 @@ export async function getStatsData(
 
   // Genre aggregation
   const genreMap = new Map<string, number>();
-  for (const row of allItems) {
+  for (const row of rows) {
     const genres = parseGenres(row.media_items?.genres);
     for (const g of genres) {
       if (!g.name) continue;
@@ -147,7 +159,7 @@ export async function getStatsData(
 
   // Decade aggregation (movies only)
   const decadeMap = new Map<number, number>();
-  for (const row of allItems) {
+  for (const row of rows) {
     if (row.media_items?.media_type !== "movie") continue;
     const releaseDate = row.media_items?.release_date;
     if (!releaseDate) continue;
@@ -162,7 +174,7 @@ export async function getStatsData(
 
   // Rating distribution (1-10 stored in DB)
   const ratingMap = new Map<number, number>();
-  for (const row of allItems) {
+  for (const row of rows) {
     if (row.rating !== null) {
       ratingMap.set(row.rating, (ratingMap.get(row.rating) ?? 0) + 1);
     }
@@ -173,7 +185,7 @@ export async function getStatsData(
 
   // Monthly watched heatmap
   const monthMap = new Map<string, { year: number; month: number; count: number }>();
-  for (const row of allItems) {
+  for (const row of rows) {
     if (row.status !== "watched" || !row.watched_date) continue;
     const d = parseISO(row.watched_date);
     const year = d.getFullYear();
@@ -191,7 +203,7 @@ export async function getStatsData(
   );
 
   // Top rated
-  const topRated = allItems
+  const topRated = rows
     .filter((r) => r.rating !== null)
     .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
     .slice(0, 5)
@@ -205,6 +217,17 @@ export async function getStatsData(
       mediaType: r.media_items.media_type,
     }));
 
+  const allItems: StatsItem[] = rows.map((r) => ({
+    tmdb_id: r.media_items.tmdb_id,
+    media_type: r.media_items.media_type,
+    title: r.media_items.title,
+    poster_path: r.media_items.poster_path,
+    release_date: r.media_items.release_date,
+    rating: r.rating,
+    watched_date: r.watched_date,
+    genres: parseGenres(r.media_items?.genres),
+  }));
+
   return {
     totalCount,
     watchedCount,
@@ -215,6 +238,7 @@ export async function getStatsData(
     ratingDistribution,
     monthlyWatched,
     topRated,
+    allItems,
   };
 }
 

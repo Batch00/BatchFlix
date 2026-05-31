@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -7,14 +8,20 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from "recharts";
-import type { GenreCount } from "@/lib/queries/stats";
+import { normalizeGenre } from "@/lib/queries/stats";
+import type { GenreCount, StatsItem } from "@/lib/queries/stats";
 
 type Props = {
   data: GenreCount[];
+  allItems?: StatsItem[];
+  onDrillDown?: (title: string, items: StatsItem[]) => void;
 };
 
-export function GenreChart({ data }: Props) {
+export function GenreChart({ data, allItems, onDrillDown }: Props) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   return (
     <div>
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -46,7 +53,28 @@ export function GenreChart({ data }: Props) {
             }}
             formatter={(value) => [value, "titles"]}
           />
-          <Bar dataKey="count" fill="#2563EB" radius={[0, 4, 4, 0]} />
+          <Bar
+            dataKey="count"
+            radius={[0, 4, 4, 0]}
+            cursor={onDrillDown ? "pointer" : undefined}
+            onMouseEnter={(_, index) => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(null)}
+            onClick={(barData: unknown) => {
+              if (!onDrillDown || !allItems) return;
+              const genre = (barData as GenreCount).name;
+              const matches = allItems.filter((item) =>
+                item.genres.some((g) => normalizeGenre(g.name) === genre)
+              );
+              onDrillDown(genre, matches);
+            }}
+          >
+            {data.map((_, index) => (
+              <Cell
+                key={`cell-${index}`}
+                fill={index === activeIndex ? "#3b82f6" : "#2563EB"}
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>

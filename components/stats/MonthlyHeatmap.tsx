@@ -1,10 +1,15 @@
 "use client";
 
-import type { MonthlyCount, TimeRange } from "@/lib/queries/stats";
+import type { MonthlyCount, TimeRange, StatsItem } from "@/lib/queries/stats";
 
 const MONTH_LABELS = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+const MONTH_NAMES_FULL = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
 ];
 
 type MonthCell = { year: number; month: number; label: string; count: number };
@@ -16,7 +21,6 @@ function getMonthsToShow(range: TimeRange): Array<{ year: number; month: number 
       month: i + 1,
     }));
   }
-  // lifetime or last12months: last 12 months from now
   const now = new Date();
   return Array.from({ length: 12 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1);
@@ -27,9 +31,11 @@ function getMonthsToShow(range: TimeRange): Array<{ year: number; month: number 
 type Props = {
   data: MonthlyCount[];
   range: TimeRange;
+  allItems?: StatsItem[];
+  onDrillDown?: (title: string, items: StatsItem[]) => void;
 };
 
-export function MonthlyHeatmap({ data, range }: Props) {
+export function MonthlyHeatmap({ data, range, allItems, onDrillDown }: Props) {
   const countMap = new Map(
     data.map((d) => [`${d.year}-${d.month}`, d.count])
   );
@@ -44,6 +50,18 @@ export function MonthlyHeatmap({ data, range }: Props) {
     count: countMap.get(`${year}-${month}`) ?? 0,
   }));
 
+  function handleCellClick(cell: MonthCell) {
+    if (!onDrillDown || !allItems) return;
+    const matches = allItems.filter((item) => {
+      if (!item.watched_date) return false;
+      const dateStr = item.watched_date.split("T")[0];
+      const parts = dateStr.split("-");
+      return parseInt(parts[0]) === cell.year && parseInt(parts[1]) === cell.month;
+    });
+    const label = `${MONTH_NAMES_FULL[cell.month - 1]} ${cell.year}`;
+    onDrillDown(label, matches);
+  }
+
   return (
     <div>
       <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
@@ -56,9 +74,11 @@ export function MonthlyHeatmap({ data, range }: Props) {
           const blueOpacity = Math.round(intensity * 100);
 
           return (
-            <div
+            <button
               key={`${cell.year}-${cell.month}`}
-              className="flex flex-col items-center gap-1 rounded-lg p-2"
+              type="button"
+              onClick={() => handleCellClick(cell)}
+              className="flex cursor-pointer flex-col items-center gap-1 rounded-lg p-2 transition-all hover:ring-1 hover:ring-[#2563EB]/60"
               style={{
                 backgroundColor:
                   bg ??
@@ -71,7 +91,7 @@ export function MonthlyHeatmap({ data, range }: Props) {
               <span className="text-sm font-medium text-foreground">
                 {cell.count}
               </span>
-            </div>
+            </button>
           );
         })}
       </div>

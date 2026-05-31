@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -9,20 +10,20 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import type { RatingCount } from "@/lib/queries/stats";
+import type { RatingCount, StatsItem } from "@/lib/queries/stats";
 
 type Props = {
   data: RatingCount[];
+  allItems?: StatsItem[];
+  onDrillDown?: (title: string, items: StatsItem[]) => void;
 };
 
-// All possible rating values 1-10 (stored scale)
 const ALL_RATINGS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 function ratingLabel(r: number): string {
   return (r / 2).toFixed(1);
 }
 
-// Interpolate color between #2563EB and #7c3aed based on position
 function barColor(index: number, total: number): string {
   const t = total > 1 ? index / (total - 1) : 0;
   const r = Math.round(0x25 + t * (0x7c - 0x25));
@@ -31,7 +32,9 @@ function barColor(index: number, total: number): string {
   return `rgb(${r},${g},${b})`;
 }
 
-export function RatingDistributionChart({ data }: Props) {
+export function RatingDistributionChart({ data, allItems, onDrillDown }: Props) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
+
   const countMap = new Map(data.map((d) => [d.rating, d.count]));
 
   const chartData = ALL_RATINGS.map((r) => ({
@@ -74,11 +77,29 @@ export function RatingDistributionChart({ data }: Props) {
             formatter={(value) => [value, "titles"]}
             labelFormatter={(label) => `Rating: ${label}`}
           />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+          <Bar
+            dataKey="count"
+            radius={[4, 4, 0, 0]}
+            cursor={onDrillDown ? "pointer" : undefined}
+            onMouseEnter={(_, index) => setActiveIndex(index)}
+            onMouseLeave={() => setActiveIndex(null)}
+            onClick={(barData: unknown) => {
+              if (!onDrillDown || !allItems) return;
+              const ratingValue = (barData as { rating: number }).rating;
+              const displayValue = (ratingValue / 2).toFixed(1);
+              const matches = allItems.filter((item) => item.rating === ratingValue);
+              onDrillDown(`Rated ${displayValue} Stars`, matches);
+            }}
+          >
             {chartData.map((entry, index) => (
               <Cell
                 key={`cell-${entry.rating}`}
                 fill={barColor(index, chartData.length)}
+                style={
+                  index === activeIndex
+                    ? { filter: "brightness(1.35)" }
+                    : undefined
+                }
               />
             ))}
           </Bar>

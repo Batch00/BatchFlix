@@ -129,7 +129,7 @@ export function AddToLibrary({
           watchedDate:
             activeStatus !== "watchlist" && watchedDate ? watchedDate : null,
           notes: notes || null,
-          ...(activeStatus === "watched" && createdAt
+          ...(activeStatus === "watchlist" && createdAt
             ? { createdAt }
             : {}),
         }),
@@ -381,30 +381,17 @@ export function AddToLibrary({
           )}
 
           {activeStatus === "watched" && (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-muted-foreground">
-                  Watch date
-                </label>
-                <input
-                  type="date"
-                  value={watchedDate}
-                  onChange={(e) => setWatchedDate(e.target.value)}
-                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs text-muted-foreground">
-                  Date added
-                </label>
-                <input
-                  type="date"
-                  value={createdAt}
-                  onChange={(e) => setCreatedAt(e.target.value)}
-                  className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
-                />
-              </div>
-            </>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">
+                Watch date
+              </label>
+              <input
+                type="date"
+                value={watchedDate}
+                onChange={(e) => setWatchedDate(e.target.value)}
+                className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+            </div>
           )}
 
           {activeStatus === "watching" && (
@@ -424,10 +411,16 @@ export function AddToLibrary({
           {activeStatus === "watchlist" && (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">
-                Date added
+                Date Added
               </label>
-              <p className="text-sm text-muted-foreground">
-                {formatDate(userMedia.created_at)}
+              <input
+                type="date"
+                value={createdAt}
+                onChange={(e) => setCreatedAt(e.target.value)}
+                className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+              <p className="text-xs text-muted-foreground/60">
+                When you added this to your watchlist.
               </p>
             </div>
           )}

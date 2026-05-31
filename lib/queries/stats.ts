@@ -5,6 +5,29 @@ function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+const GENRE_NORMALIZE: Record<string, string> = {
+  "Science Fiction": "Sci-Fi",
+  "Sci-Fi & Fantasy": "Sci-Fi",
+  "Action & Adventure": "Action",
+  "War & Politics": "War",
+};
+
+function normalizeGenre(name: string): string {
+  return GENRE_NORMALIZE[name] ?? name;
+}
+
+function parseGenres(raw: unknown): Array<{ id: number; name: string }> {
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw as Array<{ id: number; name: string }>;
+}
+
 export type TimeRange =
   | { type: "lifetime" }
   | { type: "year"; year: number }
@@ -110,9 +133,11 @@ export async function getStatsData(
   // Genre aggregation
   const genreMap = new Map<string, number>();
   for (const row of allItems) {
-    const genres = row.media_items?.genres ?? [];
+    const genres = parseGenres(row.media_items?.genres);
     for (const g of genres) {
-      genreMap.set(g.name, (genreMap.get(g.name) ?? 0) + 1);
+      if (!g.name) continue;
+      const name = normalizeGenre(g.name);
+      genreMap.set(name, (genreMap.get(name) ?? 0) + 1);
     }
   }
   const genreCounts = Array.from(genreMap.entries())
@@ -120,9 +145,10 @@ export async function getStatsData(
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
-  // Decade aggregation
+  // Decade aggregation (movies only)
   const decadeMap = new Map<number, number>();
   for (const row of allItems) {
+    if (row.media_items?.media_type !== "movie") continue;
     const releaseDate = row.media_items?.release_date;
     if (!releaseDate) continue;
     const year = +releaseDate.slice(0, 4);

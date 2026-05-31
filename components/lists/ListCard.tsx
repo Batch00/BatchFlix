@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Pin, Pencil, Trash2, Heart } from "lucide-react";
+import { Pin, Pencil, Trash2, Heart, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ListWithCount } from "@/lib/queries/lists";
 
@@ -16,10 +16,27 @@ const COLOR_BG: Record<string, string> = {
   "#0891b2": "bg-cyan-600",
 };
 
-function ColorDot({ color }: { color: string }) {
+const COLOR_DOT: Record<string, string> = {
+  "#2563EB": "bg-blue-600",
+  "#7c3aed": "bg-violet-600",
+  "#db2777": "bg-pink-600",
+  "#dc2626": "bg-red-600",
+  "#ea580c": "bg-orange-600",
+  "#ca8a04": "bg-yellow-600",
+  "#16a34a": "bg-green-600",
+  "#0891b2": "bg-cyan-600",
+};
+
+function ColorDot({ color, size = "md" }: { color: string; size?: "sm" | "md" }) {
   const cls = COLOR_BG[color] ?? "bg-blue-600";
   return (
-    <span className={cn("h-2.5 w-2.5 flex-shrink-0 rounded-full", cls)} />
+    <span
+      className={cn(
+        "flex-shrink-0 rounded-full",
+        size === "sm" ? "h-2 w-2" : "h-2.5 w-2.5",
+        cls
+      )}
+    />
   );
 }
 
@@ -31,6 +48,7 @@ type Props = {
 
 export function ListCard({ list, onEdit, onDelete }: Props) {
   const isFavorites = list.name === "Favorites";
+  const sublistCount = list.sublists?.length ?? 0;
 
   return (
     <div className="relative">
@@ -60,8 +78,16 @@ export function ListCard({ list, onEdit, onDelete }: Props) {
           </p>
         )}
 
-        <div className="mt-4 text-sm text-muted-foreground">
-          {list.item_count} {list.item_count === 1 ? "item" : "items"}
+        <div className="mt-4 flex items-center gap-3 text-sm text-muted-foreground">
+          <span>
+            {list.item_count} {list.item_count === 1 ? "item" : "items"}
+          </span>
+          {sublistCount > 0 && (
+            <span className="flex items-center gap-1">
+              <Layers className="h-3.5 w-3.5" />
+              {sublistCount} {sublistCount === 1 ? "sublist" : "sublists"}
+            </span>
+          )}
         </div>
       </Link>
 
@@ -91,6 +117,31 @@ export function ListCard({ list, onEdit, onDelete }: Props) {
           </button>
         )}
       </div>
+
+      {/* Sublist chips rendered below the card */}
+      {sublistCount > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5 px-1">
+          {list.sublists!.map((sub) => (
+            <Link
+              key={sub.id}
+              href={`/lists/${sub.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1.5 rounded-full border border-[#1f1f1f] bg-[#111111] px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
+            >
+              <span
+                className={cn(
+                  "h-2 w-2 flex-shrink-0 rounded-full",
+                  COLOR_DOT[sub.color] ?? "bg-blue-600"
+                )}
+              />
+              <span className="max-w-[100px] truncate font-medium">
+                {sub.name}
+              </span>
+              <span className="text-muted-foreground/60">{sub.item_count}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -16,6 +16,7 @@ const patchSchema = z.object({
   color: z.string().optional(),
   isPinned: z.boolean().optional(),
   rules: z.array(ruleSchema).optional(),
+  parentListId: z.string().uuid().nullable().optional(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: Params }) {
@@ -63,13 +64,62 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, description, color, isPinned, rules } = parsed.data;
+  const { name, description, color, isPinned, rules, parentListId } =
+    parsed.data;
+
+  // Validate parent list if provided
+  if (parentListId) {
+    // Can't be your own parent
+    if (parentListId === id) {
+      return NextResponse.json(
+        { error: "A list cannot be its own parent" },
+        { status: 400 }
+      );
+    }
+
+    const { data: parent } = await supabase
+      .schema("batchflix")
+      .from("lists")
+      .select("id, parent_list_id")
+      .eq("id", parentListId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!parent) {
+      return NextResponse.json(
+        { error: "Parent list not found" },
+        { status: 400 }
+      );
+    }
+    if ((parent as Record<string, unknown>).parent_list_id) {
+      return NextResponse.json(
+        { error: "Cannot nest sublists more than one level deep" },
+        { status: 400 }
+      );
+    }
+
+    // Prevent making a parent list (one that has children) into a sublist
+    const { count: childCount } = await supabase
+      .schema("batchflix")
+      .from("lists")
+      .select("*", { count: "exact", head: true })
+      .eq("parent_list_id", id);
+
+    if (childCount && childCount > 0) {
+      return NextResponse.json(
+        { error: "A list with sublists cannot itself become a sublist" },
+        { status: 400 }
+      );
+    }
+  }
+
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
   if (description !== undefined) updates.description = description;
   if (color !== undefined) updates.color = color;
   if (isPinned !== undefined) updates.is_pinned = isPinned;
   if (rules !== undefined) updates.rules = rules;
+  if (parentListId !== undefined) updates.parent_list_id = parentListId;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

@@ -32,15 +32,25 @@ const PRESET_COLORS = [
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  topLevelLists?: Array<{ id: string; name: string }>;
+  initialParentListId?: string | null;
 };
 
-export function CreateListDialog({ open, onOpenChange }: Props) {
+export function CreateListDialog({
+  open,
+  onOpenChange,
+  topLevelLists,
+  initialParentListId,
+}: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState<string>(PRESET_COLORS[0].hex);
   const [isPinned, setIsPinned] = useState(false);
   const [autoRemoveWatched, setAutoRemoveWatched] = useState(false);
+  const [parentListId, setParentListId] = useState<string>(
+    initialParentListId ?? ""
+  );
   const [saving, setSaving] = useState(false);
 
   function reset() {
@@ -49,6 +59,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
     setColor(PRESET_COLORS[0].hex);
     setIsPinned(false);
     setAutoRemoveWatched(false);
+    setParentListId(initialParentListId ?? "");
   }
 
   function handleOpenChange(val: boolean) {
@@ -72,6 +83,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
           color,
           isPinned,
           rules,
+          parentListId: parentListId || null,
         }),
       });
       if (!res.ok) {
@@ -140,17 +152,38 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Pin className="h-4 w-4 text-muted-foreground" />
-              <Label htmlFor="list-pin">Pin to top</Label>
+          {topLevelLists && topLevelLists.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="list-parent">Nest under list (optional)</Label>
+              <select
+                id="list-parent"
+                value={parentListId}
+                onChange={(e) => setParentListId(e.target.value)}
+                className="rounded-md border border-border bg-secondary px-3 py-2 text-sm text-foreground outline-none focus:border-primary"
+              >
+                <option value="">None (top-level list)</option>
+                {topLevelLists.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </select>
             </div>
-            <Switch
-              id="list-pin"
-              checked={isPinned}
-              onCheckedChange={setIsPinned}
-            />
-          </div>
+          )}
+
+          {!parentListId && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Pin className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="list-pin">Pin to top</Label>
+              </div>
+              <Switch
+                id="list-pin"
+                checked={isPinned}
+                onCheckedChange={setIsPinned}
+              />
+            </div>
+          )}
 
           <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
             <div className="flex items-center justify-between">

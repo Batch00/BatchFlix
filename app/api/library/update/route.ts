@@ -89,28 +89,67 @@ export async function PATCH(request: NextRequest) {
     if (listItems && listItems.length > 0) {
       const listIds = listItems.map((li) => li.list_id as string);
 
-      // Fetch those lists to check rules
+      // Fetch those lists including parent_list_id for cascade check
       const { data: lists } = await supabase
         .schema("batchflix")
         .from("lists")
-        .select("id, rules")
+        .select("id, rules, parent_list_id")
         .eq("user_id", user.id)
         .in("id", listIds);
 
       if (lists) {
+        // Collect unique parent IDs to fetch parent rules in one query
+        const parentIds = [
+          ...new Set(
+            lists
+              .map((l) => (l as Record<string, unknown>).parent_list_id as string | null)
+              .filter(Boolean) as string[]
+          ),
+        ];
+
+        let parentRulesMap = new Map<string, Array<{ type: string; status?: string }>>();
+        if (parentIds.length > 0) {
+          const { data: parentLists } = await supabase
+            .schema("batchflix")
+            .from("lists")
+            .select("id, rules")
+            .eq("user_id", user.id)
+            .in("id", parentIds);
+
+          parentRulesMap = new Map(
+            (parentLists ?? []).map((p) => [
+              p.id as string,
+              (p.rules as Array<{ type: string; status?: string }> | null) ?? [],
+            ])
+          );
+        }
+
         for (const list of lists) {
-          const rules = (list.rules as Array<{ type: string; status?: string }> | null) ?? [];
-          const matches = rules.some(
+          const lr = list as Record<string, unknown>;
+          const rules = (lr.rules as Array<{ type: string; status?: string }> | null) ?? [];
+          const parentListId = lr.parent_list_id as string | null;
+
+          // Check own rules
+          let matches = rules.some(
             (r) => r.type === "auto_remove_on_status" && r.status === status
           );
+
+          // If no own match, check parent rules (cascade)
+          if (!matches && parentListId) {
+            const parentRules = parentRulesMap.get(parentListId) ?? [];
+            matches = parentRules.some(
+              (r) => r.type === "auto_remove_on_status" && r.status === status
+            );
+          }
+
           if (matches) {
             await supabase
               .schema("batchflix")
               .from("list_items")
               .delete()
-              .eq("list_id", list.id as string)
+              .eq("list_id", lr.id as string)
               .eq("media_id", mediaId);
-            removedFromLists.push(list.id as string);
+            removedFromLists.push(lr.id as string);
           }
         }
       }

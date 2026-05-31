@@ -96,6 +96,11 @@ export function ListsContent({ initialLists }: Props) {
   const favorites = lists.find((l) => l.name === "Favorites");
   const sortable = lists.filter((l) => l.name !== "Favorites");
 
+  // Top-level lists available as parent options (exclude Favorites since it's special)
+  const topLevelLists = lists
+    .filter((l) => l.name !== "Favorites")
+    .map((l) => ({ id: l.id, name: l.name }));
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, {
@@ -209,7 +214,11 @@ export function ListsContent({ initialLists }: Props) {
         </div>
       )}
 
-      <CreateListDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateListDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        topLevelLists={topLevelLists}
+      />
 
       <EditListDialog
         list={editList}
@@ -217,6 +226,7 @@ export function ListsContent({ initialLists }: Props) {
         onOpenChange={(v) => {
           if (!v) setEditList(null);
         }}
+        topLevelLists={topLevelLists}
       />
 
       <AlertDialog

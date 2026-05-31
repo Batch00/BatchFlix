@@ -14,6 +14,7 @@ const createSchema = z.object({
   color: z.string().optional(),
   isPinned: z.boolean().optional(),
   rules: z.array(ruleSchema).optional(),
+  parentListId: z.string().uuid().nullable().optional(),
 });
 
 export async function GET() {
@@ -56,7 +57,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, description, color, isPinned, rules } = parsed.data;
+  const { name, description, color, isPinned, rules, parentListId } =
+    parsed.data;
+
+  // Validate parent list if provided
+  if (parentListId) {
+    const { data: parent } = await supabase
+      .schema("batchflix")
+      .from("lists")
+      .select("id, parent_list_id")
+      .eq("id", parentListId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!parent) {
+      return NextResponse.json(
+        { error: "Parent list not found" },
+        { status: 400 }
+      );
+    }
+    if ((parent as Record<string, unknown>).parent_list_id) {
+      return NextResponse.json(
+        { error: "Cannot nest sublists more than one level deep" },
+        { status: 400 }
+      );
+    }
+  }
 
   const { data, error } = await supabase
     .schema("batchflix")
@@ -68,6 +94,7 @@ export async function POST(request: NextRequest) {
       color: color ?? "#2563EB",
       is_pinned: isPinned ?? false,
       rules: rules ?? [],
+      parent_list_id: parentListId ?? null,
     })
     .select()
     .single();

@@ -14,11 +14,23 @@ export type ListRow = {
   color: string;
   is_pinned: boolean;
   rules: ListRule[];
+  parent_list_id: string | null;
   created_at: string;
   updated_at: string;
 };
 
-export type ListWithCount = ListRow & { item_count: number };
+export type SublistSummary = {
+  id: string;
+  name: string;
+  color: string;
+  description: string | null;
+  item_count: number;
+};
+
+export type ListWithCount = ListRow & {
+  item_count: number;
+  sublists?: ListWithCount[];
+};
 
 export type ListItemUserMedia = {
   id: string;
@@ -37,7 +49,11 @@ export type ListItemRow = {
   user_media: ListItemUserMedia | null;
 };
 
-export type ListWithItems = ListRow & { list_items: ListItemRow[] };
+export type ListWithItems = ListRow & {
+  list_items: ListItemRow[];
+  parent?: { id: string; name: string; color: string } | null;
+  sublists?: SublistSummary[];
+};
 
 export async function getUserLists(
   supabase: SupabaseClient,
@@ -54,12 +70,40 @@ export async function getUserLists(
 
   if (error) throw error;
 
-  return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
-    ...(row as ListRow),
-    rules: (row.rules as ListRule[] | null) ?? [],
-    item_count:
-      (row.list_items as Array<{ count: number }>)?.[0]?.count ?? 0,
-  }));
+  const allLists = ((data ?? []) as Array<Record<string, unknown>>).map(
+    (row) => ({
+      ...(row as ListRow),
+      rules: (row.rules as ListRule[] | null) ?? [],
+      parent_list_id: (row.parent_list_id as string | null) ?? null,
+      item_count:
+        (row.list_items as Array<{ count: number }>)?.[0]?.count ?? 0,
+    })
+  ) as ListWithCount[];
+
+  // Separate top-level lists from sublists
+  const sublistsByParent = new Map<string, ListWithCount[]>();
+  const topLevel: ListWithCount[] = [];
+
+  for (const list of allLists) {
+    if (list.parent_list_id) {
+      const siblings = sublistsByParent.get(list.parent_list_id) ?? [];
+      siblings.push(list);
+      sublistsByParent.set(list.parent_list_id, siblings);
+    } else {
+      topLevel.push(list);
+    }
+  }
+
+  // Attach sublists to parents and aggregate item counts
+  return topLevel.map((parent) => {
+    const sublists = sublistsByParent.get(parent.id) ?? [];
+    const sublistTotal = sublists.reduce((sum, s) => sum + s.item_count, 0);
+    return {
+      ...parent,
+      item_count: parent.item_count + sublistTotal,
+      sublists,
+    };
+  });
 }
 
 export async function getListById(
@@ -90,9 +134,10 @@ export async function getListById(
   if (error) throw error;
   if (!list) return null;
 
-  const items = ((list as Record<string, unknown>).list_items ?? []) as Array<
-    Record<string, unknown>
-  >;
+  const listRecord = list as Record<string, unknown>;
+  const parentListId = (listRecord.parent_list_id as string | null) ?? null;
+
+  const items = (listRecord.list_items ?? []) as Array<Record<string, unknown>>;
   const mediaIds = items.map((item) => item.media_id as string);
 
   let userMediaMap = new Map<string, ListItemUserMedia>();
@@ -113,13 +158,51 @@ export async function getListById(
     );
   }
 
+  // Fetch parent info (for sublist breadcrumb) or sublists (for parent view)
+  let parent: { id: string; name: string; color: string } | null = null;
+  let sublists: SublistSummary[] = [];
+
+  if (parentListId) {
+    const { data: parentData } = await supabase
+      .schema("batchflix")
+      .from("lists")
+      .select("id, name, color")
+      .eq("id", parentListId)
+      .eq("user_id", userId)
+      .maybeSingle();
+    parent = (parentData as { id: string; name: string; color: string } | null) ?? null;
+  } else {
+    const { data: sublistData } = await supabase
+      .schema("batchflix")
+      .from("lists")
+      .select("id, name, color, description, list_items(count)")
+      .eq("parent_list_id", listId)
+      .eq("user_id", userId)
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    sublists = ((sublistData ?? []) as Array<Record<string, unknown>>).map(
+      (s) => ({
+        id: s.id as string,
+        name: s.name as string,
+        color: s.color as string,
+        description: (s.description as string | null) ?? null,
+        item_count:
+          (s.list_items as Array<{ count: number }>)?.[0]?.count ?? 0,
+      })
+    );
+  }
+
   return {
     ...(list as ListRow),
-    rules: ((list as Record<string, unknown>).rules as ListRule[] | null) ?? [],
+    rules: (listRecord.rules as ListRule[] | null) ?? [],
+    parent_list_id: parentListId,
     list_items: items.map((item) => ({
       ...(item as Omit<ListItemRow, "user_media">),
       user_media: userMediaMap.get(item.media_id as string) ?? null,
     })),
+    parent,
+    sublists,
   } as ListWithItems;
 }
 

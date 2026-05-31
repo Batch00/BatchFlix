@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft,
+  ChevronRight,
   Plus,
   X,
   Film,
@@ -13,6 +14,7 @@ import {
   LayoutGrid,
   List,
   GripVertical,
+  Layers,
 } from "lucide-react";
 import {
   DndContext,
@@ -35,9 +37,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/library/StarRating";
 import { useSearchContext } from "@/components/search/SearchProvider";
+import { CreateListDialog } from "./CreateListDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { ListWithItems, ListItemRow } from "@/lib/queries/lists";
+import type { ListWithItems, ListItemRow, SublistSummary } from "@/lib/queries/lists";
 
 const VIEW_PREF_KEY = "batchflix_view_preference";
 
@@ -182,7 +185,6 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
       }}
       className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80"
     >
-      {/* Drag handle */}
       <div
         className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
         {...attributes}
@@ -273,6 +275,31 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
   );
 }
 
+function SublistRow({ sublists }: { sublists: SublistSummary[] }) {
+  return (
+    <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {sublists.map((sub) => (
+        <Link
+          key={sub.id}
+          href={`/lists/${sub.id}`}
+          className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-colors hover:border-primary/40 hover:bg-card/80"
+        >
+          <span
+            className={cn(
+              "h-2 w-2 flex-shrink-0 rounded-full",
+              COLOR_BG[sub.color] ?? "bg-blue-600"
+            )}
+          />
+          <span className="font-medium text-foreground">{sub.name}</span>
+          <span className="text-xs text-muted-foreground">
+            {sub.item_count} {sub.item_count === 1 ? "item" : "items"}
+          </span>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
 type Props = {
   list: ListWithItems;
 };
@@ -282,6 +309,7 @@ export function ListDetailContent({ list }: Props) {
   const { openForList } = useSearchContext();
   const [items, setItems] = useState<ListItemRow[]>(list.list_items);
   const [view, setView] = useState<"grid" | "list">("list");
+  const [createSublistOpen, setCreateSublistOpen] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_PREF_KEY);
@@ -355,18 +383,51 @@ export function ListDetailContent({ list }: Props) {
 
   const isFavorites = list.name === "Favorites";
   const colorClass = COLOR_BG[list.color] ?? "bg-blue-600";
+  const isSublist = !!list.parent_list_id;
+  const hasSubl = (list.sublists?.length ?? 0) > 0;
+
+  // Total items = direct items + sublist item counts
+  const sublistTotal = (list.sublists ?? []).reduce(
+    (sum, s) => sum + s.item_count,
+    0
+  );
+  const totalCount = items.length + sublistTotal;
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
-          <Link
-            href="/lists"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Lists
-          </Link>
+          {/* Breadcrumb: for sublists show parent → this; for top-level show ← Lists */}
+          {isSublist && list.parent ? (
+            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Link
+                href="/lists"
+                className="transition-colors hover:text-foreground"
+              >
+                Lists
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
+              <Link
+                href={`/lists/${list.parent.id}`}
+                className="max-w-[120px] truncate transition-colors hover:text-foreground"
+              >
+                {list.parent.name}
+              </Link>
+              <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
+              <span className="max-w-[120px] truncate text-foreground">
+                {list.name}
+              </span>
+            </div>
+          ) : (
+            <Link
+              href="/lists"
+              className="flex items-center gap-1 text-sm text-muted-foreground transition-colors duration-150 hover:text-foreground"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Lists
+            </Link>
+          )}
+
           <div className="mt-1 flex items-center gap-2.5">
             {!isFavorites && (
               <span
@@ -374,14 +435,34 @@ export function ListDetailContent({ list }: Props) {
               />
             )}
             <h1 className="text-3xl font-bold text-foreground">{list.name}</h1>
+            {isSublist && (
+              <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
+                sublist
+              </span>
+            )}
           </div>
+
           {list.description && (
             <p className="mt-1 text-sm text-muted-foreground">
               {list.description}
             </p>
           )}
           <p className="mt-1 text-sm text-muted-foreground">
-            {items.length} {items.length === 1 ? "item" : "items"}
+            {hasSubl ? (
+              <>
+                {totalCount} {totalCount === 1 ? "item" : "items"} total
+                {items.length > 0 && (
+                  <span className="text-muted-foreground/60">
+                    {" "}
+                    ({items.length} direct)
+                  </span>
+                )}
+              </>
+            ) : (
+              <>
+                {items.length} {items.length === 1 ? "item" : "items"}
+              </>
+            )}
           </p>
         </div>
 
@@ -426,14 +507,39 @@ export function ListDetailContent({ list }: Props) {
         </div>
       </div>
 
+      {/* Sublists section (only for parent lists) */}
+      {hasSubl && list.sublists && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+              <Layers className="h-4 w-4 text-muted-foreground" />
+              Sublists
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateSublistOpen(true)}
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              New sublist
+            </Button>
+          </div>
+          <SublistRow sublists={list.sublists} />
+        </div>
+      )}
+
+      {/* Direct items */}
       {items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
+        <div className="flex flex-col items-center justify-center py-16 text-center">
           <Film className="mb-4 h-12 w-12 text-muted-foreground/40" />
           <h2 className="text-lg font-semibold text-foreground">
-            This list is empty
+            {hasSubl ? "No direct items" : "This list is empty"}
           </h2>
           <p className="mt-1 max-w-xs text-sm text-muted-foreground">
-            Add items by searching or from any media page.
+            {hasSubl
+              ? "Items are in sublists. Add items directly here or browse a sublist."
+              : "Add items by searching or from any media page."}
           </p>
           <Button
             variant="outline"
@@ -481,6 +587,14 @@ export function ListDetailContent({ list }: Props) {
           </SortableContext>
         </DndContext>
       )}
+
+      {/* Create sublist dialog with this list pre-selected as parent */}
+      <CreateListDialog
+        open={createSublistOpen}
+        onOpenChange={setCreateSublistOpen}
+        topLevelLists={[{ id: list.id, name: list.name }]}
+        initialParentListId={list.id}
+      />
     </div>
   );
 }

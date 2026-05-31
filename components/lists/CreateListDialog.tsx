@@ -43,6 +43,10 @@ export function CreateListDialog({
   initialParentListId,
 }: Props) {
   const router = useRouter();
+  const isSublist = !!initialParentListId;
+  const lockedParentName = topLevelLists?.find(
+    (l) => l.id === initialParentListId
+  )?.name;
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [color, setColor] = useState<string>(PRESET_COLORS[0].hex);
@@ -104,7 +108,7 @@ export function CreateListDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New List</DialogTitle>
+          <DialogTitle>{isSublist ? "New Sublist" : "New List"}</DialogTitle>
         </DialogHeader>
 
         <div className="flex flex-col gap-4">
@@ -114,8 +118,9 @@ export function CreateListDialog({
               id="list-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="My List"
+              placeholder={isSublist ? "Sublist name" : "My List"}
               maxLength={50}
+              autoFocus={isSublist}
             />
           </div>
 
@@ -152,7 +157,14 @@ export function CreateListDialog({
             </div>
           </div>
 
-          {topLevelLists && topLevelLists.length > 0 && (
+          {isSublist && lockedParentName ? (
+            <div className="flex flex-col gap-1.5">
+              <Label>Nested under</Label>
+              <p className="rounded-md border border-border bg-secondary/50 px-3 py-2 text-sm text-muted-foreground">
+                {lockedParentName}
+              </p>
+            </div>
+          ) : topLevelLists && topLevelLists.length > 0 && (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="list-parent">Nest under list (optional)</Label>
               <select

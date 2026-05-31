@@ -118,30 +118,6 @@ export function ListCard({ list, onEdit, onDelete }: Props) {
         )}
       </div>
 
-      {/* Sublist chips rendered below the card */}
-      {sublistCount > 0 && (
-        <div className="mt-2 flex flex-wrap gap-1.5 px-1">
-          {list.sublists!.map((sub) => (
-            <Link
-              key={sub.id}
-              href={`/lists/${sub.id}`}
-              onClick={(e) => e.stopPropagation()}
-              className="flex items-center gap-1.5 rounded-full border border-[#1f1f1f] bg-[#111111] px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
-            >
-              <span
-                className={cn(
-                  "h-2 w-2 flex-shrink-0 rounded-full",
-                  COLOR_DOT[sub.color] ?? "bg-blue-600"
-                )}
-              />
-              <span className="max-w-[100px] truncate font-medium">
-                {sub.name}
-              </span>
-              <span className="text-muted-foreground/60">{sub.item_count}</span>
-            </Link>
-          ))}
-        </div>
-      )}
     </div>
   );
 }

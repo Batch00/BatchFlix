@@ -40,7 +40,7 @@ import { useSearchContext } from "@/components/search/SearchProvider";
 import { CreateListDialog } from "./CreateListDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { ListWithItems, ListItemRow, SublistSummary } from "@/lib/queries/lists";
+import type { ListWithItems, ListItemRow } from "@/lib/queries/lists";
 
 const VIEW_PREF_KEY = "batchflix_view_preference";
 
@@ -275,30 +275,6 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
   );
 }
 
-function SublistRow({ sublists }: { sublists: SublistSummary[] }) {
-  return (
-    <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {sublists.map((sub) => (
-        <Link
-          key={sub.id}
-          href={`/lists/${sub.id}`}
-          className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm transition-colors hover:border-primary/40 hover:bg-card/80"
-        >
-          <span
-            className={cn(
-              "h-2 w-2 flex-shrink-0 rounded-full",
-              COLOR_BG[sub.color] ?? "bg-blue-600"
-            )}
-          />
-          <span className="font-medium text-foreground">{sub.name}</span>
-          <span className="text-xs text-muted-foreground">
-            {sub.item_count} {sub.item_count === 1 ? "item" : "items"}
-          </span>
-        </Link>
-      ))}
-    </div>
-  );
-}
 
 type Props = {
   list: ListWithItems;
@@ -399,7 +375,7 @@ export function ListDetailContent({ list }: Props) {
         <div className="flex flex-col gap-1">
           {/* Breadcrumb: for sublists show parent → this; for top-level show ← Lists */}
           {isSublist && list.parent ? (
-            <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
               <Link
                 href="/lists"
                 className="transition-colors hover:text-foreground"
@@ -409,12 +385,12 @@ export function ListDetailContent({ list }: Props) {
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
               <Link
                 href={`/lists/${list.parent.id}`}
-                className="max-w-[120px] truncate transition-colors hover:text-foreground"
+                className="font-medium transition-colors hover:text-foreground"
               >
                 {list.parent.name}
               </Link>
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="max-w-[120px] truncate text-foreground">
+              <span className="font-medium text-foreground">
                 {list.name}
               </span>
             </div>
@@ -510,22 +486,36 @@ export function ListDetailContent({ list }: Props) {
       {/* Sublists section (only for parent lists) */}
       {hasSubl && list.sublists && (
         <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-              <Layers className="h-4 w-4 text-muted-foreground" />
-              Sublists
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
+          <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+            <Layers className="h-4 w-4 text-muted-foreground" />
+            Sublists
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {list.sublists.map((sub) => (
+              <Link
+                key={sub.id}
+                href={`/lists/${sub.id}`}
+                className="flex items-center gap-1.5 rounded-full border border-[#1f1f1f] px-3 py-1.5 text-sm transition-colors hover:border-[#2563EB]/40"
+              >
+                <span
+                  className={cn(
+                    "h-2 w-2 flex-shrink-0 rounded-full",
+                    COLOR_BG[sub.color] ?? "bg-blue-600"
+                  )}
+                />
+                <span className="font-medium text-foreground">{sub.name}</span>
+                <span className="text-muted-foreground/70">{sub.item_count}</span>
+              </Link>
+            ))}
+            <button
+              type="button"
               onClick={() => setCreateSublistOpen(true)}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className="flex items-center gap-1.5 rounded-full border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
             >
               <Plus className="h-3.5 w-3.5" />
               New sublist
-            </Button>
+            </button>
           </div>
-          <SublistRow sublists={list.sublists} />
         </div>
       )}
 

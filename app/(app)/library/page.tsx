@@ -23,9 +23,7 @@ type Sort = (typeof VALID_SORT)[number];
 type MediaType = (typeof VALID_MEDIA_TYPE)[number];
 
 function getDefaultSort(status: Status): Sort {
-  return status === "watched" || status === "watching"
-    ? "watched_date"
-    : "date_added";
+  return status === "watchlist" ? "date_added" : "watched_date";
 }
 
 type LibraryDataProps = {

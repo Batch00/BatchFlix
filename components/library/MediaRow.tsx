@@ -53,10 +53,8 @@ export function MediaRow({ item, onRemoved }: Props) {
   const [rowStatus, setRowStatus] = useState<Status>(item.status);
   const [rowRating, setRowRating] = useState(item.rating ?? 0);
   const [rowDate, setRowDate] = useState(item.watched_date ?? "");
-  const [rowCreatedAt, setRowCreatedAt] = useState(item.created_at.slice(0, 10));
 
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const dateGroupRef = useRef<HTMLDivElement>(null);
   const ratingWrapRef = useRef<HTMLDivElement>(null);
 
   const { media_items: m } = item;
@@ -107,24 +105,16 @@ export function MediaRow({ item, onRemoved }: Props) {
     }
   }
 
-  async function saveDates(newDate: string, newCreatedAt: string) {
+  async function saveDate(newDate: string) {
     setEditingDate(false);
-    const dateChanged = newDate !== rowDate;
-    const createdAtChanged = newCreatedAt !== rowCreatedAt;
-    if (!dateChanged && !createdAtChanged) return;
-    const prevDate = rowDate;
-    const prevCreatedAt = rowCreatedAt;
-    if (dateChanged) setRowDate(newDate);
-    if (createdAtChanged) setRowCreatedAt(newCreatedAt);
+    if (newDate === rowDate) return;
+    const prev = rowDate;
+    setRowDate(newDate);
     try {
-      const fields: Record<string, unknown> = {};
-      if (dateChanged) fields.watchedDate = newDate || null;
-      if (createdAtChanged) fields.createdAt = newCreatedAt || null;
-      await updateField(fields);
+      await updateField({ watchedDate: newDate || null });
       toast.success("Date updated");
     } catch {
-      setRowDate(prevDate);
-      setRowCreatedAt(prevCreatedAt);
+      setRowDate(prev);
       toast.error("Save failed");
     }
   }
@@ -273,41 +263,18 @@ export function MediaRow({ item, onRemoved }: Props) {
 
         {/* Date -- double-click to edit */}
         {editingDate ? (
-          <div
-            ref={dateGroupRef}
-            className="flex flex-col gap-1"
-            onBlur={(e) => {
-              if (!dateGroupRef.current?.contains(e.relatedTarget as Node)) {
-                saveDates(rowDate, rowCreatedAt);
-              }
+          <input
+            ref={dateInputRef}
+            type="date"
+            defaultValue={rowDate}
+            onBlur={(e) => saveDate(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") saveDate((e.target as HTMLInputElement).value);
+              if (e.key === "Escape") setEditingDate(false);
             }}
-          >
-            <input
-              ref={dateInputRef}
-              type="date"
-              value={rowDate}
-              onChange={(e) => setRowDate(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveDates(rowDate, rowCreatedAt);
-                if (e.key === "Escape") setEditingDate(false);
-              }}
-              autoFocus
-              placeholder="Watch date"
-              className="w-28 rounded border border-border bg-secondary px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-primary"
-            />
-            <input
-              type="date"
-              value={rowCreatedAt}
-              onChange={(e) => setRowCreatedAt(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveDates(rowDate, rowCreatedAt);
-                if (e.key === "Escape") setEditingDate(false);
-              }}
-              placeholder="Date added"
-              title="Date added"
-              className="w-28 rounded border border-border bg-secondary px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-primary"
-            />
-          </div>
+            autoFocus
+            className="w-28 rounded border border-border bg-secondary px-1.5 py-0.5 text-xs text-foreground outline-none focus:border-primary"
+          />
         ) : (
           <button
             type="button"

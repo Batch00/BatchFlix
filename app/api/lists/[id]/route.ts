@@ -5,11 +5,17 @@ import { getListById } from "@/lib/queries/lists";
 
 type Params = Promise<{ id: string }>;
 
+const ruleSchema = z.object({
+  type: z.string(),
+  status: z.string().optional(),
+});
+
 const patchSchema = z.object({
   name: z.string().min(1).max(50).optional(),
   description: z.string().nullable().optional(),
   color: z.string().optional(),
   isPinned: z.boolean().optional(),
+  rules: z.array(ruleSchema).optional(),
 });
 
 export async function GET(req: NextRequest, { params }: { params: Params }) {
@@ -57,12 +63,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, description, color, isPinned } = parsed.data;
+  const { name, description, color, isPinned, rules } = parsed.data;
   const updates: Record<string, unknown> = {};
   if (name !== undefined) updates.name = name;
   if (description !== undefined) updates.description = description;
   if (color !== undefined) updates.color = color;
   if (isPinned !== undefined) updates.is_pinned = isPinned;
+  if (rules !== undefined) updates.rules = rules;
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });

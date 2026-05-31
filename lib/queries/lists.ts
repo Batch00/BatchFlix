@@ -1,6 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { MediaItemRow } from "./library";
 
+export type ListRule = {
+  type: string;
+  status?: string;
+};
+
 export type ListRow = {
   id: string;
   user_id: string;
@@ -8,6 +13,7 @@ export type ListRow = {
   description: string | null;
   color: string;
   is_pinned: boolean;
+  rules: ListRule[];
   created_at: string;
   updated_at: string;
 };
@@ -50,6 +56,7 @@ export async function getUserLists(
 
   return ((data ?? []) as Array<Record<string, unknown>>).map((row) => ({
     ...(row as ListRow),
+    rules: (row.rules as ListRule[] | null) ?? [],
     item_count:
       (row.list_items as Array<{ count: number }>)?.[0]?.count ?? 0,
   }));
@@ -108,6 +115,7 @@ export async function getListById(
 
   return {
     ...(list as ListRow),
+    rules: ((list as Record<string, unknown>).rules as ListRule[] | null) ?? [],
     list_items: items.map((item) => ({
       ...(item as Omit<ListItemRow, "user_media">),
       user_media: userMediaMap.get(item.media_id as string) ?? null,

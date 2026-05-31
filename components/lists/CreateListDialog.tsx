@@ -40,6 +40,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
   const [description, setDescription] = useState("");
   const [color, setColor] = useState<string>(PRESET_COLORS[0].hex);
   const [isPinned, setIsPinned] = useState(false);
+  const [autoRemoveWatched, setAutoRemoveWatched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   function reset() {
@@ -47,6 +48,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
     setDescription("");
     setColor(PRESET_COLORS[0].hex);
     setIsPinned(false);
+    setAutoRemoveWatched(false);
   }
 
   function handleOpenChange(val: boolean) {
@@ -58,6 +60,9 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
     if (!name.trim()) return;
     setSaving(true);
     try {
+      const rules = autoRemoveWatched
+        ? [{ type: "auto_remove_on_status", status: "watched" }]
+        : [];
       const res = await fetch("/api/lists", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,6 +71,7 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
           description: description.trim() || undefined,
           color,
           isPinned,
+          rules,
         }),
       });
       if (!res.ok) {
@@ -144,6 +150,25 @@ export function CreateListDialog({ open, onOpenChange }: Props) {
               checked={isPinned}
               onCheckedChange={setIsPinned}
             />
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="list-auto-remove" className="font-medium">
+                Auto-remove when watched
+              </Label>
+              <Switch
+                id="list-auto-remove"
+                checked={autoRemoveWatched}
+                onCheckedChange={setAutoRemoveWatched}
+              />
+            </div>
+            {autoRemoveWatched && (
+              <p className="text-xs text-muted-foreground">
+                Items in this list will be removed automatically when you mark
+                them as watched.
+              </p>
+            )}
           </div>
         </div>
 

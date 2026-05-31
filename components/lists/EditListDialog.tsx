@@ -42,6 +42,7 @@ export function EditListDialog({ list, open, onOpenChange }: Props) {
   const [description, setDescription] = useState("");
   const [color, setColor] = useState<string>(PRESET_COLORS[0].hex);
   const [isPinned, setIsPinned] = useState(false);
+  const [autoRemoveWatched, setAutoRemoveWatched] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -51,6 +52,11 @@ export function EditListDialog({ list, open, onOpenChange }: Props) {
       setDescription(list.description ?? "");
       setColor(list.color);
       setIsPinned(list.is_pinned);
+      setAutoRemoveWatched(
+        (list.rules ?? []).some(
+          (r) => r.type === "auto_remove_on_status" && r.status === "watched"
+        )
+      );
     }, 0);
     return () => clearTimeout(id);
   }, [list]);
@@ -59,6 +65,9 @@ export function EditListDialog({ list, open, onOpenChange }: Props) {
     if (!list || !name.trim()) return;
     setSaving(true);
     try {
+      const rules = autoRemoveWatched
+        ? [{ type: "auto_remove_on_status", status: "watched" }]
+        : [];
       const res = await fetch(`/api/lists/${list.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -67,6 +76,7 @@ export function EditListDialog({ list, open, onOpenChange }: Props) {
           description: description.trim() || null,
           color,
           isPinned,
+          rules,
         }),
       });
       if (!res.ok) {
@@ -144,6 +154,25 @@ export function EditListDialog({ list, open, onOpenChange }: Props) {
               checked={isPinned}
               onCheckedChange={setIsPinned}
             />
+          </div>
+
+          <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <div className="flex items-center justify-between">
+              <Label htmlFor="edit-list-auto-remove" className="font-medium">
+                Auto-remove when watched
+              </Label>
+              <Switch
+                id="edit-list-auto-remove"
+                checked={autoRemoveWatched}
+                onCheckedChange={setAutoRemoveWatched}
+              />
+            </div>
+            {autoRemoveWatched && (
+              <p className="text-xs text-muted-foreground">
+                Items in this list will be removed automatically when you mark
+                them as watched.
+              </p>
+            )}
           </div>
         </div>
 

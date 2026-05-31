@@ -174,7 +174,7 @@ export function LibraryContent({
         <div className="flex flex-col gap-2">
           {/* Row 1: status + sort + view toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
+            <div className="flex flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {FILTER_TABS.map((tab) => (
                 <button
                   key={tab.value}
@@ -238,7 +238,7 @@ export function LibraryContent({
           </div>
 
           {/* Row 2: media type filter */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {MEDIA_TYPE_TABS.map((tab) => (
               <button
                 key={tab.value}

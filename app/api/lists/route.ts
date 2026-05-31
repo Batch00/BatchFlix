@@ -3,11 +3,17 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getUserLists } from "@/lib/queries/lists";
 
+const ruleSchema = z.object({
+  type: z.string(),
+  status: z.string().optional(),
+});
+
 const createSchema = z.object({
   name: z.string().min(1).max(50),
   description: z.string().optional(),
   color: z.string().optional(),
   isPinned: z.boolean().optional(),
+  rules: z.array(ruleSchema).optional(),
 });
 
 export async function GET() {
@@ -50,7 +56,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { name, description, color, isPinned } = parsed.data;
+  const { name, description, color, isPinned, rules } = parsed.data;
 
   const { data, error } = await supabase
     .schema("batchflix")
@@ -61,6 +67,7 @@ export async function POST(request: NextRequest) {
       description: description ?? null,
       color: color ?? "#2563EB",
       is_pinned: isPinned ?? false,
+      rules: rules ?? [],
     })
     .select()
     .single();

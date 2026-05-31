@@ -2,7 +2,17 @@
 
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { Menu, Search, Heart, LogOut, Library, BarChart2, List } from "lucide-react";
+import {
+  Menu,
+  Search,
+  Heart,
+  LogOut,
+  Library,
+  BarChart2,
+  List,
+  RotateCw,
+} from "lucide-react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { createClient } from "@/lib/supabase/client";
@@ -36,9 +46,9 @@ export function TopNav({ userEmail }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { open } = useSearchContext();
+  const [refreshing, setRefreshing] = useState(false);
 
   const favHref = "/lists";
-
   const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
 
   async function handleSignOut() {
@@ -47,9 +57,18 @@ export function TopNav({ userEmail }: Props) {
     router.push("/");
   }
 
+  function handleRefresh() {
+    setRefreshing(true);
+    router.refresh();
+    setTimeout(() => setRefreshing(false), 600);
+  }
+
   return (
-    <header className="sticky top-0 z-40 h-14 border-b border-border bg-card">
-      <div className="flex h-full items-center justify-between px-4 md:px-6">
+    <header
+      className="sticky top-0 z-40 border-b border-border bg-card"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
+    >
+      <div className="flex h-14 items-center justify-between px-4 md:px-6">
         <Link
           href="/library"
           className="text-base font-bold tracking-tight text-foreground"
@@ -74,7 +93,7 @@ export function TopNav({ userEmail }: Props) {
           ))}
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             type="button"
             onClick={open}
@@ -87,6 +106,19 @@ export function TopNav({ userEmail }: Props) {
                 K
               </kbd>
             </span>
+          </button>
+
+          {/* Refresh button */}
+          <button
+            type="button"
+            onClick={handleRefresh}
+            title="Refresh"
+            aria-label="Refresh"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+          >
+            <RotateCw
+              className={cn("h-4 w-4", refreshing && "animate-spin")}
+            />
           </button>
 
           <Link
@@ -111,7 +143,7 @@ export function TopNav({ userEmail }: Props) {
             <DropdownMenuContent align="end">
               {userEmail && (
                 <>
-                  <DropdownMenuLabel className="truncate max-w-48">
+                  <DropdownMenuLabel className="max-w-48 truncate">
                     {userEmail}
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
@@ -187,6 +219,16 @@ export function TopNav({ userEmail }: Props) {
                 >
                   <Search className="h-4 w-4" />
                   Search
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="flex items-center gap-2 rounded-md px-3 py-2.5 text-left text-sm text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
+                >
+                  <RotateCw
+                    className={cn("h-4 w-4", refreshing && "animate-spin")}
+                  />
+                  Refresh
                 </button>
                 <button
                   type="button"

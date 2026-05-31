@@ -36,6 +36,15 @@ export async function PATCH(request: NextRequest) {
   const { userMediaId, status, rating, watchedDate, notes, isFavorite } =
     parsed.data;
 
+  // Fetch current row to detect status change
+  const { data: existing } = await supabase
+    .schema("batchflix")
+    .from("user_media")
+    .select("status, media_id")
+    .eq("id", userMediaId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   const updates: Record<string, unknown> = {};
   if (status !== undefined) updates.status = status;
   if (rating !== undefined) updates.rating = rating;
@@ -60,5 +69,53 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  const removedFromLists: string[] = [];
+
+  // Enforce auto-remove rules when status changed
+  if (
+    status !== undefined &&
+    existing?.status !== status &&
+    existing?.media_id
+  ) {
+    const mediaId = existing.media_id as string;
+
+    // Find all lists containing this media item
+    const { data: listItems } = await supabase
+      .schema("batchflix")
+      .from("list_items")
+      .select("list_id, id")
+      .eq("media_id", mediaId);
+
+    if (listItems && listItems.length > 0) {
+      const listIds = listItems.map((li) => li.list_id as string);
+
+      // Fetch those lists to check rules
+      const { data: lists } = await supabase
+        .schema("batchflix")
+        .from("lists")
+        .select("id, rules")
+        .eq("user_id", user.id)
+        .in("id", listIds);
+
+      if (lists) {
+        for (const list of lists) {
+          const rules = (list.rules as Array<{ type: string; status?: string }> | null) ?? [];
+          const matches = rules.some(
+            (r) => r.type === "auto_remove_on_status" && r.status === status
+          );
+          if (matches) {
+            await supabase
+              .schema("batchflix")
+              .from("list_items")
+              .delete()
+              .eq("list_id", list.id as string)
+              .eq("media_id", mediaId);
+            removedFromLists.push(list.id as string);
+          }
+        }
+      }
+    }
+  }
+
+  return NextResponse.json({ ...data, removedFromLists });
 }

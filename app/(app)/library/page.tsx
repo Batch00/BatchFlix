@@ -32,14 +32,27 @@ type LibraryDataProps = {
 
 async function LibraryData({ userId, status, sort, mediaType }: LibraryDataProps) {
   const supabase = await createClient();
-  const [items, favoritesListId] = await Promise.all([
-    getUserLibrary(supabase, userId, {
-      ...(status !== "all" ? { status } : {}),
-      sort,
-      ...(mediaType !== "all" ? { mediaType } : {}),
-    }),
-    getFavoritesListId(supabase, userId),
-  ]);
+  let items, favoritesListId;
+
+  try {
+    [items, favoritesListId] = await Promise.all([
+      getUserLibrary(supabase, userId, {
+        ...(status !== "all" ? { status } : {}),
+        sort,
+        ...(mediaType !== "all" ? { mediaType } : {}),
+      }),
+      getFavoritesListId(supabase, userId),
+    ]);
+  } catch (err) {
+    console.error("Library query error:", err);
+    return (
+      <div className="flex flex-col items-center justify-center py-24 text-center">
+        <p className="text-sm text-muted-foreground">
+          Failed to load library. Please try refreshing.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <LibraryContent
@@ -94,7 +107,7 @@ export default async function LibraryPage({
     : "all";
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-6">
+    <div className="mx-auto max-w-7xl px-4 pt-4 pb-8 md:px-6">
       <Suspense fallback={<LibrarySkeleton />}>
         <LibraryData
           userId={user.id}

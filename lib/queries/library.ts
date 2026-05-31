@@ -55,16 +55,12 @@ export async function getUserLibrary(
     query = query.eq("status", status);
   }
 
-  if (mediaType) {
-    query = query.eq("media_items.media_type", mediaType);
-  }
-
   if (sort === "date_added") {
     query = query.order("created_at", { ascending: false });
   } else if (sort === "watched_date") {
-    query = query.order("watched_date", { ascending: false });
+    query = query.order("watched_date", { ascending: false, nullsFirst: false });
   } else if (sort === "rating") {
-    query = query.order("rating", { ascending: false });
+    query = query.order("rating", { ascending: false, nullsFirst: false });
   }
   // title sort handled in JS after fetch
 
@@ -76,10 +72,20 @@ export async function getUserLibrary(
 
   let rows = (data ?? []) as UserMediaRow[];
 
+  // Filter by media type in JS -- PostgREST embedded resource filters can
+  // return null media_items when the embedded join doesn't match, so we filter
+  // after fetch to avoid runtime crashes.
+  if (mediaType) {
+    rows = rows.filter((row) => row.media_items?.media_type === mediaType);
+  }
+
   if (sort === "title") {
     rows = rows.sort((a, b) =>
       a.media_items.title.localeCompare(b.media_items.title)
     );
+  } else if (sort === "rating") {
+    // Ensure nulls are last after DB sort (belt-and-suspenders)
+    rows = rows.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
   }
 
   return rows;

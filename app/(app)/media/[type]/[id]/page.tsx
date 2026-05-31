@@ -131,21 +131,21 @@ async function MediaDetailData({
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Backdrop */}
-      <div className="relative h-[400px] w-full overflow-hidden">
+      {/* Backdrop -- kept short so title is immediately visible */}
+      <div className="relative h-[180px] w-full overflow-hidden sm:h-[240px] md:h-[300px]">
         {backdropPath ? (
           <Image
             src={`https://image.tmdb.org/t/p/w1280${backdropPath}`}
             alt={title}
             fill
-            className="object-cover"
+            className="object-cover object-top"
             priority
             sizes="100vw"
           />
         ) : (
           <div className="h-full w-full bg-secondary" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
         <div className="absolute left-4 top-4 z-10">
           <BackButton />
         </div>
@@ -153,9 +153,9 @@ async function MediaDetailData({
 
       {/* Content */}
       <div className="mx-auto max-w-5xl px-4 pb-16 md:px-6">
-        <div className="-mt-32 flex flex-col items-center gap-6 md:flex-row md:items-start">
-          {/* Poster */}
-          <div className="relative h-[270px] w-[180px] flex-shrink-0 overflow-hidden rounded-lg shadow-xl">
+        <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
+          {/* Poster -- overlaps the bottom edge of the backdrop */}
+          <div className="relative -mt-16 h-[210px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg shadow-xl sm:-mt-20 sm:h-[240px] sm:w-[160px] md:-mt-24 md:h-[270px] md:w-[180px]">
             {posterPath ? (
               <Image
                 src={`https://image.tmdb.org/t/p/w500${posterPath}`}
@@ -176,9 +176,9 @@ async function MediaDetailData({
           </div>
 
           {/* Details */}
-          <div className="flex w-full flex-1 flex-col gap-4 text-center md:pt-16 md:text-left">
+          <div className="flex w-full flex-1 flex-col gap-4 pt-2 text-center md:pt-6 md:text-left">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">
+              <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
                 {title}{" "}
                 {year && (
                   <span className="text-xl font-normal text-muted-foreground">

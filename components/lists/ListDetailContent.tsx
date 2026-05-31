@@ -4,7 +4,16 @@ import { useState, useCallback, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Plus, X, Film, Tv, LayoutGrid, List } from "lucide-react";
+import {
+  ChevronLeft,
+  Plus,
+  X,
+  Film,
+  Tv,
+  LayoutGrid,
+  List,
+  GripVertical,
+} from "lucide-react";
 import {
   DndContext,
   closestCenter,
@@ -18,6 +27,7 @@ import {
   SortableContext,
   sortableKeyboardCoordinates,
   rectSortingStrategy,
+  verticalListSortingStrategy,
   useSortable,
   arrayMove,
 } from "@dnd-kit/sortable";
@@ -145,20 +155,49 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
   );
 }
 
-type ListRowItemProps = {
+type SortableListRowItemProps = {
   item: ListItemRow;
   onRemove: (mediaId: string) => void;
 };
 
-function ListRowItem({ item, onRemove }: ListRowItemProps) {
+function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
   const m = item.media_items;
   const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
 
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80">
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80"
+    >
+      {/* Drag handle */}
+      <div
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4 flex-shrink-0" />
+      </div>
+
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
         className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+        onClick={(e) => {
+          if (isDragging) e.preventDefault();
+        }}
       >
         {m.poster_path ? (
           <Image
@@ -179,10 +218,20 @@ function ListRowItem({ item, onRemove }: ListRowItemProps) {
         )}
       </Link>
 
-      <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
+      <Link
+        href={`/media/${m.media_type}/${m.tmdb_id}`}
+        className="min-w-0 flex-1"
+        onClick={(e) => {
+          if (isDragging) e.preventDefault();
+        }}
+      >
+        <p className="truncate text-sm font-medium text-foreground">
+          {m.title}
+        </p>
         <div className="mt-0.5 flex items-center gap-2">
-          {year && <span className="text-xs text-muted-foreground">{year}</span>}
+          {year && (
+            <span className="text-xs text-muted-foreground">{year}</span>
+          )}
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">
             {m.media_type}
           </span>
@@ -210,7 +259,12 @@ function ListRowItem({ item, onRemove }: ListRowItemProps) {
       <button
         type="button"
         aria-label="Remove from list"
-        onClick={() => onRemove(item.media_id)}
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onRemove(item.media_id);
+        }}
         className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-destructive"
       >
         <X className="h-3.5 w-3.5" />
@@ -390,7 +444,7 @@ export function ListDetailContent({ list }: Props) {
             Add items
           </Button>
         </div>
-      ) : view === "grid" ? (
+      ) : (
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -398,26 +452,34 @@ export function ListDetailContent({ list }: Props) {
         >
           <SortableContext
             items={items.map((i) => i.id)}
-            strategy={rectSortingStrategy}
+            strategy={
+              view === "grid" ? rectSortingStrategy : verticalListSortingStrategy
+            }
           >
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {items.map((item) => (
-                <SortableItem
-                  key={item.id}
-                  item={item}
-                  listId={list.id}
-                  onRemove={handleRemove}
-                />
-              ))}
-            </div>
+            {view === "grid" ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+                {items.map((item) => (
+                  <SortableItem
+                    key={item.id}
+                    item={item}
+                    listId={list.id}
+                    onRemove={handleRemove}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {items.map((item) => (
+                  <SortableListRowItem
+                    key={item.id}
+                    item={item}
+                    onRemove={handleRemove}
+                  />
+                ))}
+              </div>
+            )}
           </SortableContext>
         </DndContext>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {items.map((item) => (
-            <ListRowItem key={item.id} item={item} onRemove={handleRemove} />
-          ))}
-        </div>
       )}
     </div>
   );

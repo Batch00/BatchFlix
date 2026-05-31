@@ -1,8 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, LayoutList } from "lucide-react";
+import { Plus, LayoutList, GripVertical } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -18,7 +35,51 @@ import { ListCard } from "./ListCard";
 import { CreateListDialog } from "./CreateListDialog";
 import { EditListDialog } from "./EditListDialog";
 import { toast } from "@/lib/toast";
+import { cn } from "@/lib/utils";
 import type { ListWithCount } from "@/lib/queries/lists";
+
+type SortableListCardProps = {
+  list: ListWithCount;
+  onEdit: (list: ListWithCount) => void;
+  onDelete: (list: ListWithCount) => void;
+};
+
+function SortableListCard({ list, onEdit, onDelete }: SortableListCardProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: list.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      className="group relative"
+    >
+      <div
+        className={cn(
+          "absolute left-3 top-3 z-10 cursor-grab touch-none rounded p-1 text-muted-foreground",
+          "opacity-0 transition-opacity duration-150 group-hover:opacity-100",
+          "hover:bg-secondary hover:text-foreground active:cursor-grabbing"
+        )}
+        {...attributes}
+        {...listeners}
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-4 w-4" />
+      </div>
+      <ListCard list={list} onEdit={onEdit} onDelete={onDelete} />
+    </div>
+  );
+}
 
 type Props = {
   initialLists: ListWithCount[];
@@ -26,13 +87,45 @@ type Props = {
 
 export function ListsContent({ initialLists }: Props) {
   const router = useRouter();
+  const [lists, setLists] = useState(initialLists);
   const [createOpen, setCreateOpen] = useState(false);
   const [editList, setEditList] = useState<ListWithCount | null>(null);
   const [deleteList, setDeleteList] = useState<ListWithCount | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  const nonFavorites = initialLists.filter((l) => l.name !== "Favorites");
-  const showEmpty = nonFavorites.length === 0;
+  const favorites = lists.find((l) => l.name === "Favorites");
+  const sortable = lists.filter((l) => l.name !== "Favorites");
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sortable.findIndex((l) => l.id === active.id);
+      const newIndex = sortable.findIndex((l) => l.id === over.id);
+      const reordered = arrayMove(sortable, oldIndex, newIndex);
+      setLists(favorites ? [favorites, ...reordered] : reordered);
+
+      try {
+        await fetch("/api/lists/reorder", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listIds: reordered.map((l) => l.id) }),
+        });
+      } catch {
+        toast.error("Failed to save list order");
+        setLists(initialLists);
+      }
+    },
+    [sortable, favorites, initialLists]
+  );
 
   async function handleConfirmDelete() {
     if (!deleteList) return;
@@ -54,6 +147,8 @@ export function ListsContent({ initialLists }: Props) {
       setDeleting(false);
     }
   }
+
+  const showEmpty = sortable.length === 0 && !favorites;
 
   return (
     <div className="flex flex-col gap-6">
@@ -80,14 +175,37 @@ export function ListsContent({ initialLists }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {initialLists.map((list) => (
+          {/* Favorites always pinned at top, not draggable */}
+          {favorites && (
             <ListCard
-              key={list.id}
-              list={list}
+              list={favorites}
               onEdit={setEditList}
               onDelete={setDeleteList}
             />
-          ))}
+          )}
+
+          {/* Remaining lists are drag-sortable */}
+          {sortable.length > 0 && (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortable.map((l) => l.id)}
+                strategy={rectSortingStrategy}
+              >
+                {sortable.map((list) => (
+                  <SortableListCard
+                    key={list.id}
+                    list={list}
+                    onEdit={setEditList}
+                    onDelete={setDeleteList}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       )}
 

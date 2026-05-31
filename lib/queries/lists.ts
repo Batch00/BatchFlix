@@ -43,6 +43,7 @@ export async function getUserLists(
     .select("*, list_items(count)")
     .eq("user_id", userId)
     .order("is_pinned", { ascending: false })
+    .order("position", { ascending: true })
     .order("created_at", { ascending: true });
 
   if (error) throw error;

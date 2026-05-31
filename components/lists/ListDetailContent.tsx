@@ -40,7 +40,17 @@ import { useSearchContext } from "@/components/search/SearchProvider";
 import { CreateListDialog } from "./CreateListDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { ListWithItems, ListItemRow } from "@/lib/queries/lists";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import type { ListWithItems, ListItemRow, SublistSummary } from "@/lib/queries/lists";
 
 const VIEW_PREF_KEY = "batchflix_view_preference";
 
@@ -286,6 +296,8 @@ export function ListDetailContent({ list }: Props) {
   const [items, setItems] = useState<ListItemRow[]>(list.list_items);
   const [view, setView] = useState<"grid" | "list">("list");
   const [createSublistOpen, setCreateSublistOpen] = useState(false);
+  const [deleteSublist, setDeleteSublist] = useState<SublistSummary | null>(null);
+  const [deletingSublist, setDeletingSublist] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_PREF_KEY);
@@ -356,6 +368,33 @@ export function ListDetailContent({ list }: Props) {
     },
     [items, list.id, router]
   );
+
+  async function handleDeleteSublist() {
+    if (!deleteSublist) return;
+    setDeletingSublist(true);
+    try {
+      const res = await fetch(`/api/lists/${deleteSublist.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "Failed to delete");
+      }
+      toast.success("Sublist deleted");
+      setDeleteSublist(null);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setDeletingSublist(false);
+    }
+  }
+
+  const PROTECTED_SUBLISTS = new Set([
+    "Favorites",
+    "Favorite Movies",
+    "Favorite TV Shows",
+  ]);
 
   const isFavorites = list.name === "Favorites";
   const colorClass = COLOR_BG[list.color] ?? "bg-blue-600";
@@ -492,20 +531,34 @@ export function ListDetailContent({ list }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             {list.sublists.map((sub) => (
-              <Link
-                key={sub.id}
-                href={`/lists/${sub.id}`}
-                className="flex items-center gap-1.5 rounded-full border border-[#1f1f1f] px-3 py-1.5 text-sm transition-colors hover:border-[#2563EB]/40"
-              >
-                <span
+              <div key={sub.id} className="group relative">
+                <Link
+                  href={`/lists/${sub.id}`}
                   className={cn(
-                    "h-2 w-2 flex-shrink-0 rounded-full",
-                    COLOR_BG[sub.color] ?? "bg-blue-600"
+                    "flex items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-3 text-sm transition-colors hover:border-[#2563EB]/40",
+                    PROTECTED_SUBLISTS.has(sub.name) ? "pr-3" : "pr-7"
                   )}
-                />
-                <span className="font-medium text-foreground">{sub.name}</span>
-                <span className="text-muted-foreground/70">{sub.item_count}</span>
-              </Link>
+                >
+                  <span
+                    className={cn(
+                      "h-2 w-2 flex-shrink-0 rounded-full",
+                      COLOR_BG[sub.color] ?? "bg-blue-600"
+                    )}
+                  />
+                  <span className="font-medium text-foreground">{sub.name}</span>
+                  <span className="text-muted-foreground/70">{sub.item_count}</span>
+                </Link>
+                {!PROTECTED_SUBLISTS.has(sub.name) && (
+                  <button
+                    type="button"
+                    aria-label={`Delete ${sub.name}`}
+                    onClick={() => setDeleteSublist(sub)}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             ))}
             <button
               type="button"
@@ -577,6 +630,32 @@ export function ListDetailContent({ list }: Props) {
           </SortableContext>
         </DndContext>
       )}
+
+      <AlertDialog
+        open={deleteSublist !== null}
+        onOpenChange={(v) => { if (!v) setDeleteSublist(null); }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete &ldquo;{deleteSublist?.name}&rdquo;?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will also remove all items in this sublist. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingSublist}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={handleDeleteSublist}
+              disabled={deletingSublist}
+            >
+              {deletingSublist ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Create sublist dialog with this list pre-selected as parent */}
       <CreateListDialog

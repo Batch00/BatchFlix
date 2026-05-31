@@ -29,9 +29,9 @@ import { cn } from "@/lib/utils";
 import type { ListItemRow } from "@/lib/queries/lists";
 
 const RANK_STYLES: Record<number, { text: string; size: string; border: string }> = {
-  1: { text: "text-yellow-400", size: "text-3xl", border: "border-l-2 border-yellow-400" },
-  2: { text: "text-zinc-400", size: "text-2xl", border: "border-l-2 border-zinc-400" },
-  3: { text: "text-amber-600", size: "text-xl", border: "border-l-2 border-amber-600" },
+  1: { text: "text-yellow-400", size: "text-2xl md:text-3xl", border: "border-l-2 border-yellow-400" },
+  2: { text: "text-zinc-400", size: "text-xl md:text-2xl", border: "border-l-2 border-zinc-400" },
+  3: { text: "text-amber-600", size: "text-lg md:text-xl", border: "border-l-2 border-amber-600" },
 };
 
 type RowProps = {
@@ -53,7 +53,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
 
   const m = item.media_items;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
-  const rankStyle = RANK_STYLES[rank] ?? { text: "text-[#71717a]", size: "text-lg", border: "" };
+  const rankStyle = RANK_STYLES[rank] ?? { text: "text-[#71717a]", size: "text-base md:text-lg", border: "" };
 
   return (
     <div
@@ -64,7 +64,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
         opacity: isDragging ? 0.5 : 1,
       }}
       className={cn(
-        "group flex items-center gap-3 border-b border-[#1f1f1f] bg-[#111111] px-3 py-2.5 hover:bg-[#1a1a1a]",
+        "group flex items-start gap-3 border-b border-[#1f1f1f] bg-[#111111] px-3 py-2.5 hover:bg-[#1a1a1a]",
         rankStyle.border
       )}
       {...attributes}
@@ -72,7 +72,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
       {/* Rank */}
       <div
         className={cn(
-          "w-9 flex-shrink-0 text-right font-mono font-bold leading-none",
+          "mt-1 w-9 flex-shrink-0 text-right font-mono font-bold leading-none",
           rankStyle.text,
           rankStyle.size
         )}
@@ -111,7 +111,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
         className="min-w-0 flex-1"
         onClick={(e) => { if (isDragging) e.preventDefault(); }}
       >
-        <p className="truncate text-base font-semibold text-foreground">{m.title}</p>
+        <p className="break-words text-base font-semibold text-foreground">{m.title}</p>
         <div className="mt-0.5 flex items-center gap-2">
           {year && <span className="text-sm text-muted-foreground">{year}</span>}
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">

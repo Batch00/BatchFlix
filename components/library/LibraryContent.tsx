@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutGrid,
@@ -11,6 +11,7 @@ import {
   Bookmark,
   Search,
   X,
+  Loader2,
 } from "lucide-react";
 import {
   Select,
@@ -101,6 +102,7 @@ export function LibraryContent({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { open: openSearch } = useSearchContext();
+  const [isPending, startTransition] = useTransition();
   const [items, setItems] = useState(initialItems);
   const [view, setView] = useState<View>("grid");
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -141,7 +143,7 @@ export function LibraryContent({
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value);
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   // When switching status tabs, clear the sort param so the server applies
@@ -150,7 +152,7 @@ export function LibraryContent({
     const params = new URLSearchParams(searchParams.toString());
     params.set("status", newStatus);
     params.delete("sort");
-    router.push(`${pathname}?${params.toString()}`);
+    startTransition(() => router.push(`${pathname}?${params.toString()}`));
   }
 
   function handleViewChange(newView: View) {
@@ -318,10 +320,17 @@ export function LibraryContent({
             )}
           </div>
         ) : view === "grid" ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {filteredItems.map((item) => (
-              <MediaCard key={item.id} item={item} />
-            ))}
+          <div className="relative">
+            {isPending && (
+              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-[#0a0a0a]/50">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            )}
+            <div className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6", isPending && "pointer-events-none")}>
+              {filteredItems.map((item) => (
+                <MediaCard key={item.id} item={item} />
+              ))}
+            </div>
           </div>
         ) : (
           <div className="flex flex-col gap-2">

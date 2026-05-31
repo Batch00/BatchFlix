@@ -53,6 +53,15 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
           </div>
         )}
 
+        <div
+          className={cn(
+            "absolute left-0 top-0 z-10 rounded-br-lg rounded-tl-lg px-1.5 py-0.5 text-[10px] font-medium text-white",
+            m.media_type === "movie" ? "bg-[#2563EB]" : "bg-[#7c3aed]"
+          )}
+        >
+          {m.media_type === "movie" ? "Movie" : "TV"}
+        </div>
+
         <StatusBadge status={status} />
 
         <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { RankingList } from "./RankingList";
 import { cn } from "@/lib/utils";
 import type { ListItemRow } from "@/lib/queries/lists";
@@ -14,13 +14,23 @@ type Props = {
 
 export function FavoritesPageClient({ moviesList, tvList, moviesListId, tvListId }: Props) {
   const [tab, setTab] = useState<"movie" | "tv">("movie");
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function handleTabChange(next: "movie" | "tv") {
+    if (next === tab) return;
+    setIsTransitioning(true);
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => setIsTransitioning(false), 200);
+    setTab(next);
+  }
 
   return (
     <div>
       <div className="mb-6 flex gap-2">
         <button
           type="button"
-          onClick={() => setTab("movie")}
+          onClick={() => handleTabChange("movie")}
           className={cn(
             "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
             tab === "movie"
@@ -32,7 +42,7 @@ export function FavoritesPageClient({ moviesList, tvList, moviesListId, tvListId
         </button>
         <button
           type="button"
-          onClick={() => setTab("tv")}
+          onClick={() => handleTabChange("tv")}
           className={cn(
             "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
             tab === "tv"
@@ -45,7 +55,7 @@ export function FavoritesPageClient({ moviesList, tvList, moviesListId, tvListId
       </div>
 
       {tab === "movie" && (
-        <section>
+        <section className={cn("transition-opacity duration-200", isTransitioning && "opacity-50")}>
           <div className="mb-4 flex items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               Movies
@@ -64,7 +74,7 @@ export function FavoritesPageClient({ moviesList, tvList, moviesListId, tvListId
       )}
 
       {tab === "tv" && (
-        <section>
+        <section className={cn("transition-opacity duration-200", isTransitioning && "opacity-50")}>
           <div className="mb-4 flex items-center gap-3">
             <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
               TV Shows

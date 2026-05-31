@@ -28,7 +28,7 @@ export default async function FavoritesPage() {
   return (
     <div className="mx-auto max-w-4xl px-4 pb-8 pt-4 md:px-6">
       <PageHeader title="Favorites & Rankings" />
-      <div className="mt-8">
+      <div className="mt-4">
         <FavoritesPageClient
           moviesList={moviesList?.list_items ?? []}
           tvList={tvList?.list_items ?? []}

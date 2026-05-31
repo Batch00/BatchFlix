@@ -20,7 +20,7 @@ export function TopRatedList({ items }: Props) {
     <div className="flex flex-col gap-3">
       {items.map((item, i) => {
         const year = item.releaseDate
-          ? new Date(item.releaseDate).getFullYear()
+          ? +item.releaseDate.slice(0, 4)
           : null;
         const displayRating = (item.rating / 2).toFixed(1);
 

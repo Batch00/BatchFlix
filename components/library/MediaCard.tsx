@@ -23,7 +23,7 @@ function StatusDot({ status }: { status: string }) {
 
 export function MediaCard({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
-  const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
+  const year = m.release_date ? +m.release_date.slice(0, 4) : null;
 
   return (
     <Link

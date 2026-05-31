@@ -1,4 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parseISO } from "date-fns";
+
+function localDateStr(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
 export type TimeRange =
   | { type: "lifetime" }
@@ -45,13 +50,9 @@ function getDateRange(
   }
 
   const now = new Date();
-  const to = now.toISOString().slice(0, 10);
-  const fromDate = new Date(
-    now.getFullYear() - 1,
-    now.getMonth(),
-    now.getDate()
-  );
-  return { from: fromDate.toISOString().slice(0, 10), to };
+  const to = localDateStr(now);
+  const fromDate = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+  return { from: localDateStr(fromDate), to };
 }
 
 type RawRow = {
@@ -124,7 +125,7 @@ export async function getStatsData(
   for (const row of allItems) {
     const releaseDate = row.media_items?.release_date;
     if (!releaseDate) continue;
-    const year = new Date(releaseDate).getFullYear();
+    const year = +releaseDate.slice(0, 4);
     if (isNaN(year)) continue;
     const decade = Math.floor(year / 10) * 10;
     decadeMap.set(decade, (decadeMap.get(decade) ?? 0) + 1);
@@ -148,7 +149,7 @@ export async function getStatsData(
   const monthMap = new Map<string, { year: number; month: number; count: number }>();
   for (const row of allItems) {
     if (row.status !== "watched" || !row.watched_date) continue;
-    const d = new Date(row.watched_date);
+    const d = parseISO(row.watched_date);
     const year = d.getFullYear();
     const month = d.getMonth() + 1;
     const key = `${year}-${month}`;

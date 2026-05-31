@@ -20,7 +20,7 @@ export function SearchResultRow({
 }: Props) {
   const title = result.title ?? result.name ?? "Untitled";
   const dateStr = result.release_date ?? result.first_air_date ?? "";
-  const year = dateStr ? new Date(dateStr).getFullYear() : null;
+  const year = dateStr ? +dateStr.slice(0, 4) : null;
   const isMovie = result.media_type === "movie";
 
   return (

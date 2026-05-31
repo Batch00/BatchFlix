@@ -104,7 +104,7 @@ async function searchTMDB(
     const byYear = results
       .map((r) => {
         const dateStr = r.release_date ?? r.first_air_date ?? "";
-        const rYear = dateStr ? new Date(dateStr).getFullYear() : 0;
+        const rYear = dateStr ? +dateStr.slice(0, 4) : 0;
         return { r, diff: Math.abs(rYear - yearNum) };
       })
       .sort((a, b) => a.diff - b.diff);

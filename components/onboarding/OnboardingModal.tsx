@@ -45,7 +45,7 @@ function SearchRow({
 }) {
   const title = result.title ?? result.name ?? "Untitled";
   const dateStr = result.release_date ?? result.first_air_date ?? "";
-  const year = dateStr ? new Date(dateStr).getFullYear() : null;
+  const year = dateStr ? +dateStr.slice(0, 4) : null;
 
   return (
     <div className="flex items-center gap-3 px-4 py-2">

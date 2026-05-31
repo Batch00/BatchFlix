@@ -106,7 +106,7 @@ async function MediaDetailData({
       ? (tmdbData as TMDBMovieDetail).release_date
       : (tmdbData as TMDBTVDetail).first_air_date;
 
-  const year = releaseDate ? new Date(releaseDate).getFullYear() : null;
+  const year = releaseDate ? +releaseDate.slice(0, 4) : null;
 
   const runtime =
     mediaType === "movie"

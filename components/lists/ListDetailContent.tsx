@@ -87,7 +87,7 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
     isDragging,
   } = useSortable({ id: item.id });
   const m = item.media_items;
-  const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
+  const year = m.release_date ? +m.release_date.slice(0, 4) : null;
 
   const STATUS_DOT: Record<string, string> = {
     watched: "bg-primary",
@@ -183,7 +183,7 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
     isDragging,
   } = useSortable({ id: item.id });
   const m = item.media_items;
-  const year = m.release_date ? new Date(m.release_date).getFullYear() : null;
+  const year = m.release_date ? +m.release_date.slice(0, 4) : null;
 
   return (
     <div

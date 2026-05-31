@@ -9,7 +9,7 @@ export function BackButton() {
     <button
       type="button"
       onClick={() => router.back()}
-      className="flex items-center gap-1 rounded-md px-2 py-1.5 text-sm text-white/70 transition-colors duration-150 hover:bg-black/30 hover:text-white"
+      className="fixed left-4 top-[60px] z-30 flex items-center gap-1 rounded-full bg-black/50 px-3 py-1.5 text-sm text-white backdrop-blur-sm transition-colors duration-150 hover:bg-black/70"
     >
       <ChevronLeft className="h-4 w-4" />
       Back

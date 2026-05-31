@@ -105,7 +105,7 @@ export function MediaRow({ item, onRemoved }: Props) {
           {item.status}
         </span>
 
-        {item.rating && item.rating > 0 ? (
+        {item.status === "watched" && item.rating && item.rating > 0 ? (
           <StarRating rating={item.rating} size={14} />
         ) : (
           <div className="w-24" />

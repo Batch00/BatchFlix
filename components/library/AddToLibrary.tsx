@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Heart, X, Loader2 } from "lucide-react";
+import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "./StarRating";
@@ -25,11 +25,17 @@ const STATUS_LABELS: Record<Status, string> = {
   watched: "Watched",
 };
 
-const STATUS_COLORS: Record<Status, string> = {
-  watched: "bg-primary/20 text-primary border-primary/30",
-  watching: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
-  watchlist: "bg-secondary text-muted-foreground border-border",
-};
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function formatDate(dateStr: string) {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 export function AddToLibrary({
   tmdbId,
@@ -38,76 +44,136 @@ export function AddToLibrary({
 }: Props) {
   const router = useRouter();
   const [userMedia, setUserMedia] = useState(initialUserMedia);
+
+  // --- State for items NOT in library (add panel) ---
+  const [addPanelOpen, setAddPanelOpen] = useState(false);
+  const [addStatus, setAddStatus] = useState<Status>("watchlist");
+  const [addRating, setAddRating] = useState(0);
+  const [addWatchedDate, setAddWatchedDate] = useState("");
+  const [addNotes, setAddNotes] = useState("");
+  const [addSaving, setAddSaving] = useState(false);
+
+  // --- State for items IN library (pill + contextual panel) ---
+  const [activeStatus, setActiveStatus] = useState<Status>(
+    initialUserMedia?.status ?? "watchlist"
+  );
   const [panelOpen, setPanelOpen] = useState(false);
-  const [status, setStatus] = useState<Status>(
-    userMedia?.status ?? "watchlist"
-  );
-  const [rating, setRating] = useState(userMedia?.rating ?? 0);
+  const [rating, setRating] = useState(initialUserMedia?.rating ?? 0);
   const [watchedDate, setWatchedDate] = useState(
-    userMedia?.watched_date ?? ""
+    initialUserMedia?.watched_date ?? ""
   );
-  const [notes, setNotes] = useState(userMedia?.notes ?? "");
+  const [notes, setNotes] = useState(initialUserMedia?.notes ?? "");
   const [saving, setSaving] = useState(false);
+  const [statusSaving, setStatusSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
 
-  function openPanel() {
-    setStatus(userMedia?.status ?? "watchlist");
-    setRating(userMedia?.rating ?? 0);
-    setWatchedDate(userMedia?.watched_date ?? "");
-    setNotes(userMedia?.notes ?? "");
-    setPanelOpen(true);
-  }
+  // Pill click: if same status, toggle panel; if different, save status + open panel
+  async function handlePillClick(newStatus: Status) {
+    if (newStatus === activeStatus) {
+      setPanelOpen((prev) => !prev);
+      return;
+    }
 
-  function handleStatusChange(s: Status) {
-    setStatus(s);
-    if (s === "watched" && !watchedDate) {
-      setWatchedDate(new Date().toISOString().slice(0, 10));
+    // Prep panel data for incoming status
+    if (newStatus === "watched" && !watchedDate) {
+      setWatchedDate(today());
+    }
+    // Clear rating when leaving "watched"
+    if (newStatus !== "watched") setRating(0);
+
+    setPanelOpen(true);
+
+    // Optimistic status update
+    const prevStatus = activeStatus;
+    setActiveStatus(newStatus);
+    setStatusSaving(true);
+
+    try {
+      const res = await fetch("/api/library/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMediaId: userMedia!.id,
+          status: newStatus,
+          // Clear rating on DB side if moving away from watched
+          ...(newStatus !== "watched" ? { rating: null } : {}),
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
+      toast.success(`Marked as ${STATUS_LABELS[newStatus]}`);
+    } catch {
+      setActiveStatus(prevStatus);
+      toast.error("Failed to update status");
+    } finally {
+      setStatusSaving(false);
     }
   }
 
+  // Save additional fields (rating, date, notes) for the current status
   async function handleSave() {
+    if (!userMedia) return;
     setSaving(true);
     try {
-      if (userMedia) {
-        const res = await fetch("/api/library/update", {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userMediaId: userMedia.id,
-            status,
-            rating: rating > 0 ? rating : null,
-            watchedDate: watchedDate || null,
-            notes: notes || null,
-          }),
-        });
-        if (!res.ok) throw new Error("Update failed");
-        const updated = await res.json();
-        setUserMedia({ ...userMedia, ...updated });
-        toast.success("Updated");
-      } else {
-        const res = await fetch("/api/library/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tmdbId,
-            mediaType,
-            status,
-            rating: rating > 0 ? rating : undefined,
-            watchedDate: watchedDate || undefined,
-            notes: notes || undefined,
-          }),
-        });
-        if (!res.ok) throw new Error("Add failed");
-        const created = await res.json();
-        setUserMedia({ ...created, media_items: null } as UserMediaRow);
-        router.refresh();
-        toast.success("Added to library");
-      }
+      const res = await fetch("/api/library/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userMediaId: userMedia.id,
+          rating:
+            activeStatus === "watched" && rating > 0 ? rating : null,
+          watchedDate:
+            activeStatus !== "watchlist" && watchedDate ? watchedDate : null,
+          notes: notes || null,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      const updated = await res.json();
+      setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
+      toast.success("Saved");
       setPanelOpen(false);
+    } catch {
+      toast.error("Could not save.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Add to library (for items not yet in library)
+  async function handleAddToLibrary() {
+    setAddSaving(true);
+    try {
+      const res = await fetch("/api/library/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tmdbId,
+          mediaType,
+          status: addStatus,
+          rating:
+            addStatus === "watched" && addRating > 0 ? addRating : undefined,
+          watchedDate:
+            addStatus !== "watchlist" && addWatchedDate
+              ? addWatchedDate
+              : undefined,
+          notes: addNotes || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error("Add failed");
+      const created = await res.json();
+      setUserMedia({ ...created, media_items: null } as UserMediaRow);
+      setActiveStatus(addStatus);
+      setRating(addStatus === "watched" ? addRating : 0);
+      setWatchedDate(addWatchedDate);
+      setNotes(addNotes);
+      setAddPanelOpen(false);
+      router.refresh();
+      toast.success("Added to library");
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
-      setSaving(false);
+      setAddSaving(false);
     }
   }
 
@@ -115,6 +181,9 @@ export function AddToLibrary({
     if (!userMedia) return;
     setToggling(true);
     const newFav = !userMedia.is_favorite;
+    const listName =
+      mediaType === "movie" ? "Favorite Movies" : "Favorite TV Shows";
+
     try {
       const res = await fetch("/api/library/update", {
         method: "PATCH",
@@ -124,33 +193,29 @@ export function AddToLibrary({
           isFavorite: newFav,
         }),
       });
-      if (!res.ok) throw new Error("Update failed");
-      setUserMedia({ ...userMedia, is_favorite: newFav });
+      if (!res.ok) throw new Error();
+      setUserMedia((prev) =>
+        prev ? { ...prev, is_favorite: newFav } : prev
+      );
 
-      // Sync with Favorites list
+      // Sync with the correct favorites list
       const listsRes = await fetch("/api/lists");
       if (listsRes.ok) {
         const lists = await listsRes.json();
-        const favList = (lists as Array<{ id: string; name: string }>).find(
-          (l) => l.name === "Favorites"
-        );
+        const favList = (
+          lists as Array<{ id: string; name: string }>
+        ).find((l) => l.name === listName);
         if (favList && userMedia.media_id) {
-          if (newFav) {
-            await fetch(`/api/lists/${favList.id}/items`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ mediaId: userMedia.media_id }),
-            });
-          } else {
-            await fetch(`/api/lists/${favList.id}/items`, {
-              method: "DELETE",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ mediaId: userMedia.media_id }),
-            });
-          }
+          await fetch(`/api/lists/${favList.id}/items`, {
+            method: newFav ? "POST" : "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ mediaId: userMedia.media_id }),
+          });
         }
       }
-      toast.success(newFav ? "Added to Favorites" : "Removed from Favorites");
+      toast.success(
+        newFav ? `Added to ${listName}` : `Removed from ${listName}`
+      );
     } catch {
       toast.error("Could not update favorite.");
     } finally {
@@ -158,101 +223,161 @@ export function AddToLibrary({
     }
   }
 
-  return (
-    <div className="flex w-full flex-col gap-3">
-      {userMedia && !panelOpen && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span
-            className={cn(
-              "rounded-full border px-3 py-1 text-xs font-medium transition-colors duration-150",
-              STATUS_COLORS[userMedia.status]
-            )}
-          >
-            {STATUS_LABELS[userMedia.status]}
-          </span>
-          {userMedia.rating && userMedia.rating > 0 && (
-            <StarRating rating={userMedia.rating} size={14} />
-          )}
-          <button
-            type="button"
-            onClick={openPanel}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
-            aria-label="Edit library entry"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={toggleFavorite}
-            disabled={toggling}
-            className="rounded-md p-1.5 transition-colors duration-150 hover:bg-secondary"
-            aria-label={
-              userMedia.is_favorite ? "Remove from favorites" : "Add to favorites"
-            }
-          >
-            <Heart
-              className={cn(
-                "h-4 w-4",
-                userMedia.is_favorite
-                  ? "fill-red-500 text-red-500"
-                  : "text-muted-foreground"
-              )}
-            />
-          </button>
-        </div>
-      )}
-
-      {!userMedia && !panelOpen && (
-        <Button onClick={openPanel} className="w-full sm:w-auto">
+  // ---- NOT in library ----
+  if (!userMedia) {
+    if (!addPanelOpen) {
+      return (
+        <Button
+          onClick={() => setAddPanelOpen(true)}
+          className="w-full sm:w-auto"
+        >
           Add to Library
         </Button>
-      )}
+      );
+    }
 
-      {panelOpen && (
-        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-foreground">
-              {userMedia ? "Edit entry" : "Add to library"}
-            </span>
+    return (
+      <div className="flex w-full flex-col gap-4 rounded-lg border border-border bg-card p-4">
+        <span className="text-sm font-medium text-foreground">
+          Add to library
+        </span>
+
+        <div className="flex gap-2">
+          {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
             <button
+              key={s}
               type="button"
-              onClick={() => setPanelOpen(false)}
-              className="text-muted-foreground hover:text-foreground"
-              aria-label="Close"
+              onClick={() => {
+                setAddStatus(s);
+                if (s === "watched" && !addWatchedDate) setAddWatchedDate(today());
+                if (s !== "watched") setAddRating(0);
+              }}
+              className={cn(
+                "flex-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
+                addStatus === s
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+              )}
             >
-              <X className="h-4 w-4" />
+              {STATUS_LABELS[s]}
             </button>
-          </div>
+          ))}
+        </div>
 
-          <div className="flex gap-2">
-            {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => handleStatusChange(s)}
-                className={cn(
-                  "flex-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
-                  status === s
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-                )}
-              >
-                {STATUS_LABELS[s]}
-              </button>
-            ))}
-          </div>
-
+        {addStatus === "watched" && (
           <StarRating
             interactive
-            rating={rating}
-            onChange={setRating}
+            rating={addRating}
+            onChange={setAddRating}
             size={24}
           />
+        )}
 
-          {status === "watched" && (
+        {addStatus !== "watchlist" && (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-muted-foreground">
+              {addStatus === "watched" ? "Watch date" : "Date started"}
+            </label>
+            <input
+              type="date"
+              value={addWatchedDate}
+              onChange={(e) => setAddWatchedDate(e.target.value)}
+              className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+            />
+          </div>
+        )}
+
+        <Textarea
+          value={addNotes}
+          onChange={(e) => setAddNotes(e.target.value)}
+          placeholder="Add a note..."
+          rows={3}
+          className="resize-none text-sm"
+        />
+
+        <div className="flex gap-2">
+          <Button
+            onClick={handleAddToLibrary}
+            disabled={addSaving}
+            className="flex-1"
+          >
+            {addSaving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Save"
+            )}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setAddPanelOpen(false)}
+            className="flex-1"
+          >
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- IN library ----
+  return (
+    <div className="flex w-full flex-col gap-3">
+      {/* Status pills + heart */}
+      <div className="flex flex-wrap items-center gap-2">
+        {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => handlePillClick(s)}
+            disabled={statusSaving}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
+              activeStatus === s
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+            )}
+          >
+            {STATUS_LABELS[s]}
+          </button>
+        ))}
+
+        <button
+          type="button"
+          onClick={toggleFavorite}
+          disabled={toggling}
+          className="rounded-md p-1.5 transition-colors duration-150 hover:bg-secondary"
+          aria-label={
+            userMedia.is_favorite ? "Remove from favorites" : "Add to favorites"
+          }
+        >
+          <Heart
+            className={cn(
+              "h-4 w-4",
+              userMedia.is_favorite
+                ? "fill-red-500 text-red-500"
+                : "text-muted-foreground"
+            )}
+          />
+        </button>
+      </div>
+
+      {/* Contextual panel */}
+      {panelOpen && (
+        <div className="flex flex-col gap-4 rounded-lg border border-border bg-card p-4">
+          {activeStatus === "watched" && (
+            <StarRating
+              interactive
+              rating={rating}
+              onChange={setRating}
+              size={24}
+            />
+          )}
+
+          {activeStatus === "watched" && (
             <div className="flex flex-col gap-1.5">
               <label className="text-xs text-muted-foreground">
-                Watched date
+                Watch date
               </label>
               <input
                 type="date"
@@ -260,6 +385,31 @@ export function AddToLibrary({
                 onChange={(e) => setWatchedDate(e.target.value)}
                 className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
               />
+            </div>
+          )}
+
+          {activeStatus === "watching" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">
+                Date started
+              </label>
+              <input
+                type="date"
+                value={watchedDate}
+                onChange={(e) => setWatchedDate(e.target.value)}
+                className="rounded-md border border-border bg-secondary px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
+              />
+            </div>
+          )}
+
+          {activeStatus === "watchlist" && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs text-muted-foreground">
+                Date added
+              </label>
+              <p className="text-sm text-muted-foreground">
+                {formatDate(userMedia.created_at)}
+              </p>
             </div>
           )}
 
@@ -271,26 +421,13 @@ export function AddToLibrary({
             className="resize-none text-sm"
           />
 
-          <div className="flex gap-2">
-            <Button onClick={handleSave} disabled={saving} className="flex-1">
-              {saving ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                "Save"
-              )}
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setPanelOpen(false)}
-              className="flex-1"
-            >
-              Cancel
-            </Button>
-          </div>
+          <Button onClick={handleSave} disabled={saving} className="w-full">
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Save"
+            )}
+          </Button>
         </div>
       )}
     </div>

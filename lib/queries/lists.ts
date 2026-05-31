@@ -144,3 +144,21 @@ export async function getFavoritesListId(
 
   return data?.id ?? null;
 }
+
+export async function getFavoritesListIds(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<{ movies: string | null; tv: string | null }> {
+  const { data } = await supabase
+    .schema("batchflix")
+    .from("lists")
+    .select("id, name")
+    .eq("user_id", userId)
+    .in("name", ["Favorite Movies", "Favorite TV Shows"]);
+
+  const rows = (data ?? []) as Array<{ id: string; name: string }>;
+  return {
+    movies: rows.find((r) => r.name === "Favorite Movies")?.id ?? null,
+    tv: rows.find((r) => r.name === "Favorite TV Shows")?.id ?? null,
+  };
+}

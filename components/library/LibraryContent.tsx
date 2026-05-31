@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutGrid,
@@ -10,7 +9,6 @@ import {
   Eye,
   Play,
   Bookmark,
-  Heart,
 } from "lucide-react";
 import {
   Select,
@@ -89,7 +87,6 @@ type Props = {
   status: Status;
   sort: Sort;
   mediaType: MediaType;
-  favoritesListId: string | null;
 };
 
 export function LibraryContent({
@@ -97,7 +94,6 @@ export function LibraryContent({
   status,
   sort,
   mediaType,
-  favoritesListId,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -138,6 +134,15 @@ export function LibraryContent({
     router.push(`${pathname}?${params.toString()}`);
   }
 
+  // When switching status tabs, clear the sort param so the server applies
+  // the contextual default (watched/watching → watch date, else → date added)
+  function handleStatusChange(newStatus: Status) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("status", newStatus);
+    params.delete("sort");
+    router.push(`${pathname}?${params.toString()}`);
+  }
+
   function handleViewChange(newView: View) {
     setView(newView);
     localStorage.setItem(VIEW_PREF_KEY, newView);
@@ -163,15 +168,6 @@ export function LibraryContent({
               {items.length} items
             </span>
           </div>
-          {favoritesListId && (
-            <Link
-              href={`/lists/${favoritesListId}`}
-              className="flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors duration-150 hover:bg-secondary hover:text-foreground"
-            >
-              <Heart className="h-4 w-4" />
-              Favorites
-            </Link>
-          )}
         </div>
 
         {/* Toolbar */}
@@ -183,7 +179,7 @@ export function LibraryContent({
                 <button
                   key={tab.value}
                   type="button"
-                  onClick={() => updateParam("status", tab.value)}
+                  onClick={() => handleStatusChange(tab.value)}
                   className={cn(
                     "flex-shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
                     status === tab.value

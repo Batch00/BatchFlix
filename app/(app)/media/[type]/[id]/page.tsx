@@ -130,9 +130,12 @@ async function MediaDetailData({
   const posterPath = tmdbData.poster_path;
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Backdrop -- kept short so title is immediately visible */}
-      <div className="relative h-[180px] w-full overflow-hidden sm:h-[240px] md:h-[300px]">
+    <div className="min-h-screen bg-background -mt-14">
+      {/* BackButton -- fixed position, sits below the nav */}
+      <BackButton />
+
+      {/* Backdrop -- bleeds to nav edge (parent has -mt-14 to cancel layout pt-14) */}
+      <div className="relative h-[180px] w-full overflow-hidden sm:h-[220px] md:h-[320px]">
         {backdropPath ? (
           <Image
             src={`https://image.tmdb.org/t/p/w1280${backdropPath}`}
@@ -145,10 +148,7 @@ async function MediaDetailData({
         ) : (
           <div className="h-full w-full bg-secondary" />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/30 to-transparent" />
-        <div className="absolute left-4 top-4 z-10">
-          <BackButton />
-        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
       {/* Content */}

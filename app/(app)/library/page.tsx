@@ -3,7 +3,6 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getUserLibrary } from "@/lib/queries/library";
-import { getFavoritesListId } from "@/lib/queries/lists";
 import { LibraryContent } from "@/components/library/LibraryContent";
 import { MediaCardSkeleton } from "@/components/skeletons/MediaCardSkeleton";
 
@@ -23,6 +22,12 @@ type Status = (typeof VALID_STATUS)[number];
 type Sort = (typeof VALID_SORT)[number];
 type MediaType = (typeof VALID_MEDIA_TYPE)[number];
 
+function getDefaultSort(status: Status): Sort {
+  return status === "watched" || status === "watching"
+    ? "watched_date"
+    : "date_added";
+}
+
 type LibraryDataProps = {
   userId: string;
   status: Status;
@@ -32,17 +37,14 @@ type LibraryDataProps = {
 
 async function LibraryData({ userId, status, sort, mediaType }: LibraryDataProps) {
   const supabase = await createClient();
-  let items, favoritesListId;
+  let items;
 
   try {
-    [items, favoritesListId] = await Promise.all([
-      getUserLibrary(supabase, userId, {
-        ...(status !== "all" ? { status } : {}),
-        sort,
-        ...(mediaType !== "all" ? { mediaType } : {}),
-      }),
-      getFavoritesListId(supabase, userId),
-    ]);
+    items = await getUserLibrary(supabase, userId, {
+      ...(status !== "all" ? { status } : {}),
+      sort,
+      ...(mediaType !== "all" ? { mediaType } : {}),
+    });
   } catch (err) {
     console.error("Library query error:", err);
     return (
@@ -60,7 +62,6 @@ async function LibraryData({ userId, status, sort, mediaType }: LibraryDataProps
       status={status}
       sort={sort}
       mediaType={mediaType}
-      favoritesListId={favoritesListId}
     />
   );
 }
@@ -97,14 +98,15 @@ export default async function LibraryPage({
   const status: Status = VALID_STATUS.includes(rawStatus as Status)
     ? (rawStatus as Status)
     : "all";
-  const sort: Sort = VALID_SORT.includes(rawSort as Sort)
-    ? (rawSort as Sort)
-    : "date_added";
   const mediaType: MediaType = VALID_MEDIA_TYPE.includes(
     rawMediaType as MediaType
   )
     ? (rawMediaType as MediaType)
     : "all";
+  // Default sort depends on status when not explicitly set
+  const sort: Sort = VALID_SORT.includes(rawSort as Sort)
+    ? (rawSort as Sort)
+    : getDefaultSort(status);
 
   return (
     <div className="mx-auto max-w-7xl px-4 pt-4 pb-8 md:px-6">

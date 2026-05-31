@@ -29,16 +29,15 @@ const navLinks = [
 ];
 
 type Props = {
-  favoritesListId: string | null;
   userEmail: string | null;
 };
 
-export function TopNav({ favoritesListId, userEmail }: Props) {
+export function TopNav({ userEmail }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { open } = useSearchContext();
 
-  const favHref = favoritesListId ? `/lists/${favoritesListId}` : "/lists";
+  const favHref = "/lists";
 
   const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
 

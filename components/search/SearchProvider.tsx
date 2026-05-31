@@ -5,6 +5,11 @@ import { useSearchOverlay } from "@/hooks/useSearchOverlay";
 import { SearchOverlay } from "./SearchOverlay";
 
 export type ListMode = { listId: string; listName: string };
+export type FavoritesMode = {
+  listId: string;
+  mediaType: "movie" | "tv";
+  listName: string;
+};
 
 type SearchContextValue = {
   isOpen: boolean;
@@ -13,6 +18,8 @@ type SearchContextValue = {
   toggle: () => void;
   openForList: (listId: string, listName: string) => void;
   listMode: ListMode | null;
+  openForFavorites: (listId: string, mediaType: "movie" | "tv", listName: string) => void;
+  favoritesMode: FavoritesMode | null;
 };
 
 const SearchContext = createContext<SearchContextValue | null>(null);
@@ -26,10 +33,21 @@ export function useSearchContext() {
 export function SearchProvider({ children }: { children: React.ReactNode }) {
   const overlay = useSearchOverlay();
   const [listMode, setListMode] = useState<ListMode | null>(null);
+  const [favoritesMode, setFavoritesMode] = useState<FavoritesMode | null>(null);
 
   const openForList = useCallback(
     (listId: string, listName: string) => {
       setListMode({ listId, listName });
+      setFavoritesMode(null);
+      overlay.open();
+    },
+    [overlay]
+  );
+
+  const openForFavorites = useCallback(
+    (listId: string, mediaType: "movie" | "tv", listName: string) => {
+      setFavoritesMode({ listId, mediaType, listName });
+      setListMode(null);
       overlay.open();
     },
     [overlay]
@@ -37,6 +55,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
 
   const close = useCallback(() => {
     setListMode(null);
+    setFavoritesMode(null);
     overlay.close();
   }, [overlay]);
 
@@ -47,6 +66,8 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     toggle: overlay.toggle,
     openForList,
     listMode,
+    openForFavorites,
+    favoritesMode,
   };
 
   return (
@@ -56,6 +77,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
         isOpen={overlay.isOpen}
         onClose={close}
         listMode={listMode}
+        favoritesMode={favoritesMode}
       />
     </SearchContext.Provider>
   );

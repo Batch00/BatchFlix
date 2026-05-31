@@ -9,6 +9,8 @@ import {
   Eye,
   Play,
   Bookmark,
+  Search,
+  X,
 } from "lucide-react";
 import {
   Select,
@@ -102,11 +104,19 @@ export function LibraryContent({
   const [items, setItems] = useState(initialItems);
   const [view, setView] = useState<View>("grid");
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [titleQuery, setTitleQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
 
   // Sync items when server re-fetches with new filters
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
+
+  // Debounce title search 150ms
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedQuery(titleQuery), 150);
+    return () => clearTimeout(id);
+  }, [titleQuery]);
 
   // Load view preference from localStorage on mount
   useEffect(() => {
@@ -152,8 +162,16 @@ export function LibraryContent({
     setItems((prev) => prev.filter((item) => item.id !== id));
   }
 
-  const showEmpty = items.length === 0;
-  const empty = EMPTY_STATES[status];
+  const filteredItems = debouncedQuery
+    ? items.filter((item) =>
+        item.media_items.title.toLowerCase().includes(debouncedQuery.toLowerCase())
+      )
+    : items;
+
+  const showEmpty = filteredItems.length === 0;
+  const empty: EmptyState = debouncedQuery
+    ? { icon: Search, heading: "No results", subtext: `No items match "${debouncedQuery}".` }
+    : EMPTY_STATES[status];
   const EmptyIcon = empty.icon;
 
   return (
@@ -165,7 +183,7 @@ export function LibraryContent({
           <div className="flex items-baseline gap-3">
             <h1 className="text-2xl font-bold text-foreground">Library</h1>
             <span className="text-sm text-muted-foreground">
-              {items.length} items
+              {filteredItems.length} items
             </span>
           </div>
         </div>
@@ -255,6 +273,28 @@ export function LibraryContent({
               </button>
             ))}
           </div>
+
+          {/* Row 3: title search */}
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              value={titleQuery}
+              onChange={(e) => setTitleQuery(e.target.value)}
+              placeholder="Search your library..."
+              className="w-full rounded-lg border border-[#1f1f1f] bg-[#111111] py-1.5 pl-8 pr-8 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-[#2563EB]"
+            />
+            {titleQuery && (
+              <button
+                type="button"
+                onClick={() => setTitleQuery("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Content */}
@@ -279,13 +319,13 @@ export function LibraryContent({
           </div>
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <MediaCard key={item.id} item={item} />
             ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {items.map((item) => (
+            {filteredItems.map((item) => (
               <MediaRow key={item.id} item={item} onRemoved={handleRemoved} />
             ))}
           </div>

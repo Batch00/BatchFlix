@@ -37,11 +37,11 @@ export async function PATCH(request: NextRequest) {
   const { userMediaId, status, rating, watchedDate, notes, isFavorite, createdAt } =
     parsed.data;
 
-  // Fetch current row to detect status change
+  // Fetch current row to detect status/favorite change
   const { data: existing } = await supabase
     .schema("batchflix")
     .from("user_media")
-    .select("status, media_id")
+    .select("status, media_id, is_favorite")
     .eq("id", userMediaId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -153,6 +153,70 @@ export async function PATCH(request: NextRequest) {
               .eq("media_id", mediaId);
             removedFromLists.push(lr.id as string);
           }
+        }
+      }
+    }
+  }
+
+  // Sync favorites list when is_favorite changes
+  const prevFavorite = (existing as Record<string, unknown> | null)?.is_favorite as boolean | undefined;
+  if (
+    isFavorite !== undefined &&
+    isFavorite !== prevFavorite &&
+    existing?.media_id
+  ) {
+    const mediaId = existing.media_id as string;
+
+    const { data: mediaItemRow } = await supabase
+      .schema("batchflix")
+      .from("media_items")
+      .select("media_type")
+      .eq("id", mediaId)
+      .maybeSingle();
+
+    if (mediaItemRow) {
+      const listName =
+        (mediaItemRow as Record<string, unknown>).media_type === "movie"
+          ? "Favorite Movies"
+          : "Favorite TV Shows";
+
+      const { data: favList } = await supabase
+        .schema("batchflix")
+        .from("lists")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("name", listName)
+        .maybeSingle();
+
+      if (favList) {
+        const favListId = (favList as Record<string, unknown>).id as string;
+        if (isFavorite) {
+          const { data: maxRow } = await supabase
+            .schema("batchflix")
+            .from("list_items")
+            .select("position")
+            .eq("list_id", favListId)
+            .order("position", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          const position =
+            ((maxRow as Record<string, unknown> | null)?.position as number | undefined ?? -1) + 1;
+
+          const { error: favInsertError } = await supabase
+            .schema("batchflix")
+            .from("list_items")
+            .insert({ list_id: favListId, media_id: mediaId, position });
+          // Ignore 23505 (already in list)
+          if (favInsertError && favInsertError.code !== "23505") {
+            // non-fatal, continue
+          }
+        } else {
+          await supabase
+            .schema("batchflix")
+            .from("list_items")
+            .delete()
+            .eq("list_id", favListId)
+            .eq("media_id", mediaId);
         }
       }
     }

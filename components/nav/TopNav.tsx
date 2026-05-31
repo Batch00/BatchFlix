@@ -48,7 +48,7 @@ export function TopNav({ userEmail }: Props) {
   const { open } = useSearchContext();
   const [refreshing, setRefreshing] = useState(false);
 
-  const favHref = "/lists";
+  const favHref = "/favorites";
   const avatarLetter = userEmail ? userEmail[0].toUpperCase() : "?";
 
   async function handleSignOut() {

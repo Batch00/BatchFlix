@@ -17,7 +17,17 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import type { ListWithCount } from "@/lib/queries/lists";
+import type { ListRule } from "@/lib/queries/lists";
+
+type EditableList = {
+  id: string;
+  name: string;
+  description: string | null;
+  color: string;
+  is_pinned: boolean;
+  rules: ListRule[];
+  parent_list_id: string | null;
+};
 
 const PRESET_COLORS = [
   { hex: "#2563EB", bg: "bg-blue-600" },
@@ -31,10 +41,11 @@ const PRESET_COLORS = [
 ] as const;
 
 type Props = {
-  list: ListWithCount | null;
+  list: EditableList | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   topLevelLists?: Array<{ id: string; name: string }>;
+  successMessage?: string;
 };
 
 export function EditListDialog({
@@ -42,6 +53,7 @@ export function EditListDialog({
   open,
   onOpenChange,
   topLevelLists,
+  successMessage,
 }: Props) {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -92,7 +104,7 @@ export function EditListDialog({
         const err = await res.json();
         throw new Error(err.error ?? "Failed to update list");
       }
-      toast.success("List updated");
+      toast.success(successMessage ?? "List updated");
       onOpenChange(false);
       router.refresh();
     } catch (err) {

@@ -6,12 +6,13 @@ import { RefreshCw } from "lucide-react";
 import { SearchResultRow } from "./SearchResultRow";
 import { useSearch } from "@/hooks/useSearch";
 import { toast } from "@/lib/toast";
-import type { ListMode } from "./SearchProvider";
+import type { ListMode, FavoritesMode } from "./SearchProvider";
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
   listMode: ListMode | null;
+  favoritesMode: FavoritesMode | null;
 };
 
 function SkeletonRow() {
@@ -26,7 +27,7 @@ function SkeletonRow() {
   );
 }
 
-export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
+export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Props) {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -85,15 +86,45 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
     [results, listMode]
   );
 
+  const addToFavorites = useCallback(
+    async (index: number) => {
+      const result = results[index];
+      if (!result || !favoritesMode) return;
+      try {
+        const res = await fetch("/api/library/add-favorite", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tmdbId: result.id,
+            mediaType: result.media_type,
+            listId: favoritesMode.listId,
+          }),
+        });
+        if (res.ok) {
+          toast.success(`Added to ${favoritesMode.listName}`);
+          onClose();
+          router.refresh();
+        } else {
+          toast.error("Failed to add to favorites");
+        }
+      } catch {
+        toast.error("Failed to add to favorites");
+      }
+    },
+    [results, favoritesMode, onClose, router]
+  );
+
   const handleSelect = useCallback(
     (index: number) => {
-      if (listMode) {
+      if (favoritesMode) {
+        addToFavorites(index);
+      } else if (listMode) {
         addToList(index);
       } else {
         navigate(index);
       }
     },
-    [listMode, addToList, navigate]
+    [favoritesMode, listMode, addToFavorites, addToList, navigate]
   );
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -116,8 +147,9 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
 
   if (!isOpen) return null;
 
-  const placeholder = listMode
-    ? `Add to ${listMode.listName}...`
+  const activeMode = listMode ?? favoritesMode;
+  const placeholder = activeMode
+    ? `Add to ${activeMode.listName}...`
     : "Search movies and TV shows...";
 
   const showResults = isLoading || query.length >= 2;
@@ -133,12 +165,12 @@ export function SearchOverlay({ isOpen, onClose, listMode }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-1 flex-col overflow-hidden bg-[#111111] animate-[fadeIn_0.15s_ease-out] md:rounded-xl md:border md:border-[#1f1f1f] md:shadow-2xl">
-          {listMode && (
+          {activeMode && (
             <div className="border-b border-[#1f1f1f] px-4 py-2">
               <span className="text-xs text-muted-foreground">
                 Adding to{" "}
                 <span className="font-medium text-foreground">
-                  {listMode.listName}
+                  {activeMode.listName}
                 </span>
               </span>
             </div>

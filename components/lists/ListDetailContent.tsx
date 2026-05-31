@@ -15,6 +15,7 @@ import {
   List,
   GripVertical,
   Layers,
+  Pencil,
 } from "lucide-react";
 import {
   DndContext,
@@ -38,6 +39,7 @@ import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/library/StarRating";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { CreateListDialog } from "./CreateListDialog";
+import { EditListDialog } from "./EditListDialog";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -298,6 +300,7 @@ export function ListDetailContent({ list }: Props) {
   const [createSublistOpen, setCreateSublistOpen] = useState(false);
   const [deleteSublist, setDeleteSublist] = useState<SublistSummary | null>(null);
   const [deletingSublist, setDeletingSublist] = useState(false);
+  const [editSublist, setEditSublist] = useState<SublistSummary | null>(null);
 
   useEffect(() => {
     const stored = localStorage.getItem(VIEW_PREF_KEY);
@@ -536,7 +539,7 @@ export function ListDetailContent({ list }: Props) {
                   href={`/lists/${sub.id}`}
                   className={cn(
                     "flex items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-3 text-sm transition-colors hover:border-[#2563EB]/40",
-                    PROTECTED_SUBLISTS.has(sub.name) ? "pr-3" : "pr-7"
+                    PROTECTED_SUBLISTS.has(sub.name) ? "pr-3" : "pr-12"
                   )}
                 >
                   <span
@@ -549,14 +552,24 @@ export function ListDetailContent({ list }: Props) {
                   <span className="text-muted-foreground/70">{sub.item_count}</span>
                 </Link>
                 {!PROTECTED_SUBLISTS.has(sub.name) && (
-                  <button
-                    type="button"
-                    aria-label={`Delete ${sub.name}`}
-                    onClick={() => setDeleteSublist(sub)}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
+                  <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                    <button
+                      type="button"
+                      aria-label={`Edit ${sub.name}`}
+                      onClick={(e) => { e.preventDefault(); setEditSublist(sub); }}
+                      className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+                    >
+                      <Pencil className="h-3 w-3" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Delete ${sub.name}`}
+                      onClick={() => setDeleteSublist(sub)}
+                      className="rounded-full p-0.5 text-muted-foreground hover:text-destructive"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 )}
               </div>
             ))}
@@ -663,6 +676,23 @@ export function ListDetailContent({ list }: Props) {
         onOpenChange={setCreateSublistOpen}
         topLevelLists={[{ id: list.id, name: list.name }]}
         initialParentListId={list.id}
+      />
+
+      {/* Edit sublist dialog */}
+      <EditListDialog
+        list={editSublist ? {
+          id: editSublist.id,
+          name: editSublist.name,
+          description: editSublist.description,
+          color: editSublist.color,
+          is_pinned: editSublist.is_pinned,
+          rules: editSublist.rules,
+          parent_list_id: list.id,
+        } : null}
+        open={editSublist !== null}
+        onOpenChange={(v) => { if (!v) setEditSublist(null); }}
+        topLevelLists={[{ id: list.id, name: list.name }]}
+        successMessage="Sublist updated"
       />
     </div>
   );

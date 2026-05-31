@@ -25,6 +25,8 @@ export type SublistSummary = {
   color: string;
   description: string | null;
   item_count: number;
+  is_pinned: boolean;
+  rules: ListRule[];
 };
 
 export type ListWithCount = ListRow & {
@@ -94,8 +96,12 @@ export async function getUserLists(
     }
   }
 
+  const HIDDEN = new Set(["Favorite Movies", "Favorite TV Shows"]);
+
   // Attach sublists to parents and aggregate item counts
-  return topLevel.map((parent) => {
+  return topLevel
+    .filter((parent) => !HIDDEN.has(parent.name))
+    .map((parent) => {
     const sublists = sublistsByParent.get(parent.id) ?? [];
     const sublistTotal = sublists.reduce((sum, s) => sum + s.item_count, 0);
     return {
@@ -175,7 +181,7 @@ export async function getListById(
     const { data: sublistData } = await supabase
       .schema("batchflix")
       .from("lists")
-      .select("id, name, color, description, list_items(count)")
+      .select("id, name, color, description, is_pinned, rules, list_items(count)")
       .eq("parent_list_id", listId)
       .eq("user_id", userId)
       .order("position", { ascending: true })
@@ -189,6 +195,8 @@ export async function getListById(
         description: (s.description as string | null) ?? null,
         item_count:
           (s.list_items as Array<{ count: number }>)?.[0]?.count ?? 0,
+        is_pinned: (s.is_pinned as boolean) ?? false,
+        rules: (s.rules as ListRule[] | null) ?? [],
       })
     );
   }

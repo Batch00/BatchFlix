@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { ListPlus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +43,7 @@ function updateListById(lists: ListState[], id: string, inList: boolean): ListSt
 }
 
 export function AddToListButton({ mediaId }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [lists, setLists] = useState<ListState[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,6 +88,7 @@ export function AddToListButton({ mediaId }: Props) {
         if (!res.ok) throw new Error();
         setLists((prev) => updateListById(prev, list.id, false));
         toast.success(`Removed from ${list.name}`);
+        router.refresh();
       } else {
         const res = await fetch(`/api/lists/${list.id}/items`, {
           method: "POST",
@@ -99,6 +102,7 @@ export function AddToListButton({ mediaId }: Props) {
         if (!res.ok) throw new Error();
         setLists((prev) => updateListById(prev, list.id, true));
         toast.success(`Added to ${list.name}`);
+        router.refresh();
       }
     } catch {
       toast.error("Something went wrong");

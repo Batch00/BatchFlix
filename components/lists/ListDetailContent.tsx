@@ -79,6 +79,12 @@ type SortableItemProps = {
   onRemove: (mediaId: string) => void;
 };
 
+const GRID_STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  watched: { bg: "bg-blue-900/80", text: "text-blue-200", label: "Watched" },
+  watching: { bg: "bg-yellow-900/80", text: "text-yellow-200", label: "Watching" },
+  watchlist: { bg: "bg-zinc-800/80", text: "text-zinc-300", label: "Watchlist" },
+};
+
 function SortableItem({ item, onRemove }: SortableItemProps) {
   const {
     attributes,
@@ -90,12 +96,6 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
   } = useSortable({ id: item.id });
   const m = item.media_items;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
-
-  const STATUS_DOT: Record<string, string> = {
-    watched: "bg-primary",
-    watching: "bg-yellow-400",
-    watchlist: "bg-muted-foreground",
-  };
 
   return (
     <div
@@ -135,14 +135,20 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
             </div>
           )}
 
-          {item.user_media && (
-            <span
-              className={cn(
-                "absolute bottom-2 left-2 h-2 w-2 rounded-full ring-1 ring-black/40",
-                STATUS_DOT[item.user_media.status] ?? "bg-muted-foreground"
-              )}
-            />
-          )}
+          {item.user_media && (() => {
+            const cfg = GRID_STATUS_BADGE[item.user_media.status] ?? GRID_STATUS_BADGE.watchlist;
+            return (
+              <div
+                className={cn(
+                  "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
+                  cfg.bg,
+                  cfg.text
+                )}
+              >
+                {cfg.label}
+              </div>
+            );
+          })()}
 
           <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
             <p className="line-clamp-2 text-xs font-medium text-white">
@@ -362,7 +368,27 @@ export function ListDetailContent({ list }: Props) {
           body: JSON.stringify({ mediaId }),
         });
         if (!res.ok) throw new Error();
-        toast.success("Removed from list");
+        toast("Removed from list", {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void (async () => {
+                try {
+                  await fetch(`/api/lists/${list.id}/items`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ mediaId }),
+                  });
+                  setItems(prev);
+                  toast.success("Undone");
+                  router.refresh();
+                } catch {
+                  toast.error("Failed to undo");
+                }
+              })();
+            },
+          },
+        });
         router.refresh();
       } catch {
         setItems(prev);
@@ -427,7 +453,7 @@ export function ListDetailContent({ list }: Props) {
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
               <Link
                 href={`/lists/${list.parent.id}`}
-                className="font-medium transition-colors hover:text-foreground"
+                className="max-w-[120px] truncate font-medium transition-colors hover:text-foreground"
               >
                 {list.parent.name}
               </Link>
@@ -452,7 +478,7 @@ export function ListDetailContent({ list }: Props) {
                 className={cn("h-3 w-3 flex-shrink-0 rounded-full", colorClass)}
               />
             )}
-            <h1 className="text-3xl font-bold text-foreground">{list.name}</h1>
+            <h1 className="text-xl font-bold text-foreground md:text-3xl">{list.name}</h1>
             {isSublist && (
               <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">
                 sublist

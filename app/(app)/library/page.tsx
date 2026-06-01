@@ -107,7 +107,7 @@ export default async function LibraryPage({
     : getDefaultSort(status);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-2 pb-8 md:px-6">
+    <div className="mx-auto max-w-7xl px-4 pt-0 pb-8 md:px-6">
       <Suspense fallback={<LibrarySkeleton />}>
         <LibraryData
           userId={user.id}

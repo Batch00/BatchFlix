@@ -26,7 +26,7 @@ export default async function FavoritesPage() {
   ]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pb-8 pt-2 md:px-6">
+    <div className="mx-auto max-w-4xl px-4 pb-8 pt-0 md:px-6">
       <PageHeader title="Favorites & Rankings" />
       <div className="mt-4">
         <FavoritesPageClient

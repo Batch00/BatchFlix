@@ -118,14 +118,12 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
             {m.media_type === "movie" ? "Movie" : "TV"}
           </span>
         </div>
+        {item.user_media?.rating && item.user_media.rating > 0 && (
+          <div className="mt-1">
+            <StarRating rating={item.user_media.rating} size={12} />
+          </div>
+        )}
       </Link>
-
-      {/* Rating */}
-      {item.user_media?.rating && item.user_media.rating > 0 && (
-        <div className="hidden flex-shrink-0 sm:block">
-          <StarRating rating={item.user_media.rating} size={14} />
-        </div>
-      )}
 
       {/* Remove from favorites */}
       <button
@@ -144,7 +142,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
 
       {/* Drag handle */}
       <div
-        className="flex-shrink-0 cursor-grab touch-none text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground active:cursor-grabbing"
+        className="flex-shrink-0 cursor-grab touch-none p-2 text-muted-foreground opacity-100 transition-opacity hover:text-foreground active:cursor-grabbing md:opacity-0 md:group-hover:opacity-100"
         {...listeners}
         aria-label="Drag to reorder"
       >
@@ -199,31 +197,64 @@ export function RankingList({ initialItems, listId, mediaType, listName }: Props
   const handleRemove = useCallback(
     async (item: ListItemRow) => {
       const prev = items;
+      const userMediaId = item.user_media?.id;
+      const mediaId = item.media_id;
       setItems((cur) => cur.filter((i) => i.id !== item.id));
 
       try {
         const promises: Promise<Response>[] = [];
-
-        if (item.user_media?.id) {
+        if (userMediaId) {
           promises.push(
             fetch("/api/library/update", {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userMediaId: item.user_media.id, isFavorite: false }),
+              body: JSON.stringify({ userMediaId, isFavorite: false }),
             })
           );
         }
-
         promises.push(
           fetch(`/api/lists/${listId}/items`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mediaId: item.media_id }),
+            body: JSON.stringify({ mediaId }),
           })
         );
-
         await Promise.all(promises);
-        toast.success("Removed from favorites");
+
+        toast("Removed from favorites", {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void (async () => {
+                try {
+                  const undoPromises: Promise<Response>[] = [];
+                  if (userMediaId) {
+                    undoPromises.push(
+                      fetch("/api/library/update", {
+                        method: "PATCH",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userMediaId, isFavorite: true }),
+                      })
+                    );
+                  }
+                  undoPromises.push(
+                    fetch(`/api/lists/${listId}/items`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ mediaId }),
+                    })
+                  );
+                  await Promise.all(undoPromises);
+                  setItems(prev);
+                  toast.success("Undone");
+                  router.refresh();
+                } catch {
+                  toast.error("Failed to undo");
+                }
+              })();
+            },
+          },
+        });
         router.refresh();
       } catch {
         setItems(prev);

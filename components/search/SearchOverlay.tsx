@@ -176,15 +176,24 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
             </div>
           )}
 
-          <input
-            ref={inputRef}
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={onKeyDown}
-            placeholder={placeholder}
-            className="w-full bg-transparent px-4 py-4 text-base text-foreground outline-none placeholder:text-muted-foreground"
-          />
+          <div className="flex items-center">
+            <input
+              ref={inputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={onKeyDown}
+              placeholder={placeholder}
+              className="flex-1 bg-transparent px-4 py-4 text-base text-foreground outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              type="button"
+              onClick={onClose}
+              className="block flex-shrink-0 px-4 py-4 text-sm text-[#71717a] hover:text-white md:hidden"
+            >
+              Cancel
+            </button>
+          </div>
 
           {showResults && (
             <div className="border-t border-[#1f1f1f]">

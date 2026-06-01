@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Film, Tv, Trash2, X } from "lucide-react";
 import {
   AlertDialog,
@@ -52,6 +53,7 @@ type Props = {
 };
 
 export function MediaRow({ item, onRemoved }: Props) {
+  const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [statusPopover, setStatusPopover] = useState(false);
   const [editingRating, setEditingRating] = useState(false);
@@ -128,6 +130,13 @@ export function MediaRow({ item, onRemoved }: Props) {
 
   async function handleRemove() {
     setRemoving(true);
+    const snapshot = {
+      tmdbId: m.tmdb_id,
+      mediaType: m.media_type,
+      status: rowStatus,
+      ...(rowRating > 0 ? { rating: rowRating } : {}),
+      ...(rowDate ? { watchedDate: rowDate } : {}),
+    };
     try {
       const res = await fetch("/api/library/remove", {
         method: "DELETE",
@@ -136,7 +145,26 @@ export function MediaRow({ item, onRemoved }: Props) {
       });
       if (!res.ok) throw new Error("Remove failed");
       onRemoved(item.id);
-      toast.success("Removed from library");
+      toast("Removed from library", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              try {
+                await fetch("/api/library/add", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(snapshot),
+                });
+                toast.success("Undone");
+                router.refresh();
+              } catch {
+                toast.error("Failed to undo");
+              }
+            })();
+          },
+        },
+      });
     } catch {
       toast.error("Could not remove item.");
       setRemoving(false);
@@ -189,8 +217,7 @@ export function MediaRow({ item, onRemoved }: Props) {
               <AlertDialogHeader>
                 <AlertDialogTitle>Remove from library?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  &ldquo;{m.title}&rdquo; will be removed from your library. This
-                  cannot be undone.
+                  &ldquo;{m.title}&rdquo; will be removed from your library.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

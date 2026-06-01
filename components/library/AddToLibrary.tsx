@@ -197,15 +197,14 @@ export function AddToLibrary({
     const newFav = !userMedia.is_favorite;
     const listName =
       mediaType === "movie" ? "Favorite Movies" : "Favorite TV Shows";
+    const userMediaId = userMedia.id;
+    const mediaId = userMedia.media_id;
 
     try {
       const res = await fetch("/api/library/update", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userMediaId: userMedia.id,
-          isFavorite: newFav,
-        }),
+        body: JSON.stringify({ userMediaId, isFavorite: newFav }),
       });
       if (!res.ok) throw new Error();
       setUserMedia((prev) =>
@@ -213,23 +212,57 @@ export function AddToLibrary({
       );
 
       // Sync with the correct favorites list
+      let favListId: string | null = null;
       const listsRes = await fetch("/api/lists");
       if (listsRes.ok) {
         const lists = await listsRes.json();
         const favList = (
           lists as Array<{ id: string; name: string }>
         ).find((l) => l.name === listName);
-        if (favList && userMedia.media_id) {
+        if (favList && mediaId) {
+          favListId = favList.id;
           await fetch(`/api/lists/${favList.id}/items`, {
             method: newFav ? "POST" : "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ mediaId: userMedia.media_id }),
+            body: JSON.stringify({ mediaId }),
           });
         }
       }
-      toast.success(
-        newFav ? `Added to ${listName}` : `Removed from ${listName}`
-      );
+
+      if (!newFav) {
+        toast(`Removed from ${listName}`, {
+          action: {
+            label: "Undo",
+            onClick: () => {
+              void (async () => {
+                try {
+                  await fetch("/api/library/update", {
+                    method: "PATCH",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ userMediaId, isFavorite: true }),
+                  });
+                  if (favListId && mediaId) {
+                    await fetch(`/api/lists/${favListId}/items`, {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ mediaId }),
+                    });
+                  }
+                  setUserMedia((prev) =>
+                    prev ? { ...prev, is_favorite: true } : prev
+                  );
+                  toast.success("Undone");
+                  router.refresh();
+                } catch {
+                  toast.error("Failed to undo");
+                }
+              })();
+            },
+          },
+        });
+      } else {
+        toast.success(`Added to ${listName}`);
+      }
     } catch {
       toast.error("Could not update favorite.");
     } finally {

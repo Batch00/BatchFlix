@@ -241,7 +241,7 @@ export function TopNav({ userEmail }: Props) {
         className="fixed bottom-0 left-0 right-0 z-50 block border-t border-[#1f1f1f] bg-[#111111] md:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="flex h-14 items-center justify-around">
+        <div className="h-16 flex items-center justify-around px-2">
           {bottomNavItems.map(({ href, icon: Icon, label }) => {
             const active = pathname.startsWith(href);
             return (

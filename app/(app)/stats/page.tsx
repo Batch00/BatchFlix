@@ -50,7 +50,7 @@ export default async function StatsPage({
   if (!user) notFound();
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pt-4 pb-8 md:px-6">
+    <div className="mx-auto max-w-7xl px-4 pt-2 pb-8 md:px-6">
       <div className="flex flex-col gap-6">
         <h1 className="text-2xl font-bold text-foreground">Stats</h1>
         <TimeRangeSelector current={rangeKey} />

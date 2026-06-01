@@ -2,8 +2,11 @@
 
 import { useState, useRef } from "react";
 import { RankingList } from "./RankingList";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import type { ListItemRow } from "@/lib/queries/lists";
+
+const FAVORITES_TAB_KEY = "batchflix_favorites_prefs";
 
 type Props = {
   moviesList: ListItemRow[];
@@ -13,7 +16,10 @@ type Props = {
 };
 
 export function FavoritesPageClient({ moviesList, tvList, moviesListId, tvListId }: Props) {
-  const [tab, setTab] = useState<"movie" | "tv">("movie");
+  const [tab, setTab] = usePersistedState<"movie" | "tv">(
+    FAVORITES_TAB_KEY,
+    "movie"
+  );
   const [isTransitioning, setIsTransitioning] = useState(false);
   const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

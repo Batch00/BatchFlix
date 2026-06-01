@@ -130,11 +130,11 @@ async function MediaDetailData({
   const posterPath = tmdbData.poster_path;
 
   return (
-    <div className="min-h-screen bg-background -mt-14">
+    <div className="min-h-screen bg-background -mt-4">
       {/* BackButton -- fixed position, sits below the nav */}
       <BackButton />
 
-      {/* Backdrop -- bleeds to nav edge (parent has -mt-14 to cancel layout pt-14) */}
+      {/* Backdrop -- bleeds to nav edge (parent has -mt-4 to cancel layout pt-4) */}
       <div className="relative h-[180px] w-full overflow-hidden sm:h-[220px] md:h-[320px]">
         {backdropPath ? (
           <Image

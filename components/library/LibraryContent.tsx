@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useTransition } from "react";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useState, useEffect, useMemo } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutGrid,
   List,
@@ -11,7 +11,6 @@ import {
   Bookmark,
   Search,
   X,
-  Loader2,
 } from "lucide-react";
 import {
   Select,
@@ -24,6 +23,7 @@ import { MediaCard } from "./MediaCard";
 import { MediaRow } from "./MediaRow";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { useSearchContext } from "@/components/search/SearchProvider";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
 
@@ -33,6 +33,11 @@ type MediaType = "all" | "movie" | "tv";
 type View = "grid" | "list";
 
 const VIEW_PREF_KEY = "batchflix_view_preference";
+const LIB_PREF_KEY = "batchflix_library_prefs";
+
+const DEFAULT_STATUS: Status = "all";
+const DEFAULT_MEDIA_TYPE: MediaType = "all";
+const DEFAULT_SORT: Sort = "watched_date";
 
 const FILTER_TABS: { value: Status; label: string }[] = [
   { value: "all", label: "All" },
@@ -53,6 +58,46 @@ const SORT_OPTIONS: { value: Sort; label: string }[] = [
   { value: "rating", label: "Rating" },
   { value: "title", label: "Title" },
 ];
+
+const STATUS_VALUES = FILTER_TABS.map((t) => t.value);
+const MEDIA_TYPE_VALUES = MEDIA_TYPE_TABS.map((t) => t.value);
+const SORT_VALUES = SORT_OPTIONS.map((o) => o.value);
+
+type LibraryPrefs = {
+  status?: Status;
+  mediaType?: MediaType;
+  sort?: Sort;
+};
+
+function readLibraryPrefs(): LibraryPrefs {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(LIB_PREF_KEY) || "{}") as LibraryPrefs;
+  } catch {
+    return {};
+  }
+}
+
+function sortItems(rows: UserMediaRow[], sort: Sort): UserMediaRow[] {
+  const copy = [...rows];
+  switch (sort) {
+    case "date_added":
+      return copy.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    case "watched_date":
+      return copy.sort((a, b) => {
+        if (!a.watched_date && !b.watched_date) return 0;
+        if (!a.watched_date) return 1;
+        if (!b.watched_date) return -1;
+        return b.watched_date.localeCompare(a.watched_date);
+      });
+    case "rating":
+      return copy.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+    case "title":
+      return copy.sort((a, b) =>
+        a.media_items.title.localeCompare(b.media_items.title)
+      );
+  }
+}
 
 type EmptyState = {
   icon: React.ElementType;
@@ -87,29 +132,43 @@ const EMPTY_STATES: Record<Status, EmptyState> = {
 
 type Props = {
   initialItems: UserMediaRow[];
-  status: Status;
-  sort: Sort;
-  mediaType: MediaType;
 };
 
-export function LibraryContent({
-  initialItems,
-  status,
-  sort,
-  mediaType,
-}: Props) {
-  const router = useRouter();
+export function LibraryContent({ initialItems }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { open: openSearch } = useSearchContext();
-  const [isPending, startTransition] = useTransition();
   const [items, setItems] = useState(initialItems);
-  const [view, setView] = useState<View>("grid");
+  const [view, setView] = usePersistedState<View>(VIEW_PREF_KEY, "list");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [titleQuery, setTitleQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
 
-  // Sync items when server re-fetches with new filters
+  // Filters initialize from URL params (shareable) first, then saved prefs,
+  // then defaults.
+  const [status, setStatusState] = useState<Status>(() => {
+    const fromUrl = searchParams.get("status");
+    if (fromUrl && STATUS_VALUES.includes(fromUrl as Status)) {
+      return fromUrl as Status;
+    }
+    return readLibraryPrefs().status ?? DEFAULT_STATUS;
+  });
+  const [mediaType, setMediaTypeState] = useState<MediaType>(() => {
+    const fromUrl = searchParams.get("mediaType");
+    if (fromUrl && MEDIA_TYPE_VALUES.includes(fromUrl as MediaType)) {
+      return fromUrl as MediaType;
+    }
+    return readLibraryPrefs().mediaType ?? DEFAULT_MEDIA_TYPE;
+  });
+  const [sort, setSortState] = useState<Sort>(() => {
+    const fromUrl = searchParams.get("sort");
+    if (fromUrl && SORT_VALUES.includes(fromUrl as Sort)) {
+      return fromUrl as Sort;
+    }
+    return readLibraryPrefs().sort ?? DEFAULT_SORT;
+  });
+
+  // Sync items when the server re-fetches (e.g. after router.refresh)
   useEffect(() => {
     setItems(initialItems);
   }, [initialItems]);
@@ -119,14 +178,6 @@ export function LibraryContent({
     const id = setTimeout(() => setDebouncedQuery(titleQuery), 150);
     return () => clearTimeout(id);
   }, [titleQuery]);
-
-  // Load view preference from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(VIEW_PREF_KEY);
-    if (stored === "grid" || stored === "list") {
-      setView(stored);
-    }
-  }, []);
 
   const hasItems = initialItems.length > 0;
 
@@ -140,35 +191,57 @@ export function LibraryContent({
     }
   }, [hasItems]);
 
-  function updateParam(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(key, value);
-    startTransition(() => router.push(`${pathname}?${params.toString()}`));
+  // Persist filters to localStorage and reflect them in the URL (for
+  // shareability) without triggering a server round-trip.
+  function syncFilters(next: { status: Status; mediaType: MediaType; sort: Sort }) {
+    try {
+      localStorage.setItem(LIB_PREF_KEY, JSON.stringify(next));
+    } catch {
+      // Ignore write failures
+    }
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams();
+    if (next.status !== DEFAULT_STATUS) params.set("status", next.status);
+    if (next.mediaType !== DEFAULT_MEDIA_TYPE) params.set("mediaType", next.mediaType);
+    if (next.sort !== DEFAULT_SORT) params.set("sort", next.sort);
+    const qs = params.toString();
+    window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   }
 
-  // When switching status tabs, clear the sort param so the server applies
-  // the contextual default (watched/watching → watch date, else → date added)
   function handleStatusChange(newStatus: Status) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("status", newStatus);
-    params.delete("sort");
-    startTransition(() => router.push(`${pathname}?${params.toString()}`));
+    setStatusState(newStatus);
+    syncFilters({ status: newStatus, mediaType, sort });
   }
 
-  function handleViewChange(newView: View) {
-    setView(newView);
-    localStorage.setItem(VIEW_PREF_KEY, newView);
+  function handleMediaTypeChange(newMediaType: MediaType) {
+    setMediaTypeState(newMediaType);
+    syncFilters({ status, mediaType: newMediaType, sort });
+  }
+
+  function handleSortChange(newSort: Sort) {
+    setSortState(newSort);
+    syncFilters({ status, mediaType, sort: newSort });
   }
 
   function handleRemoved(id: string) {
     setItems((prev) => prev.filter((item) => item.id !== id));
   }
 
-  const filteredItems = debouncedQuery
-    ? items.filter((item) =>
-        item.media_items.title.toLowerCase().includes(debouncedQuery.toLowerCase())
-      )
-    : items;
+  // All filtering and sorting happens client-side, so filter switches are instant.
+  const filteredItems = useMemo(() => {
+    let rows = items;
+    if (status !== "all") rows = rows.filter((item) => item.status === status);
+    if (mediaType !== "all") {
+      rows = rows.filter((item) => item.media_items?.media_type === mediaType);
+    }
+    if (debouncedQuery) {
+      const q = debouncedQuery.toLowerCase();
+      rows = rows.filter((item) =>
+        item.media_items.title.toLowerCase().includes(q)
+      );
+    }
+    return sortItems(rows, sort);
+  }, [items, status, mediaType, debouncedQuery, sort]);
 
   const showEmpty = filteredItems.length === 0;
   const empty: EmptyState = debouncedQuery
@@ -213,7 +286,7 @@ export function LibraryContent({
             </div>
 
             <div className="flex items-center gap-2">
-              <Select value={sort} onValueChange={(v) => updateParam("sort", v)}>
+              <Select value={sort} onValueChange={(v) => handleSortChange(v as Sort)}>
                 <SelectTrigger className="h-9 w-36 text-sm">
                   <SelectValue />
                 </SelectTrigger>
@@ -229,7 +302,7 @@ export function LibraryContent({
               <div className="flex items-center rounded-md border border-border">
                 <button
                   type="button"
-                  onClick={() => handleViewChange("grid")}
+                  onClick={() => setView("grid")}
                   className={cn(
                     "rounded-l-md p-2 transition-colors duration-150",
                     view === "grid"
@@ -242,7 +315,7 @@ export function LibraryContent({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleViewChange("list")}
+                  onClick={() => setView("list")}
                   className={cn(
                     "rounded-r-md p-2 transition-colors duration-150",
                     view === "list"
@@ -263,7 +336,7 @@ export function LibraryContent({
               <button
                 key={tab.value}
                 type="button"
-                onClick={() => updateParam("mediaType", tab.value)}
+                onClick={() => handleMediaTypeChange(tab.value)}
                 className={cn(
                   "rounded-full border px-3 py-1 text-xs transition-colors duration-150",
                   mediaType === tab.value
@@ -320,17 +393,10 @@ export function LibraryContent({
             )}
           </div>
         ) : view === "grid" ? (
-          <div className="relative">
-            {isPending && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-[#0a0a0a]/50">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            <div className={cn("grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6", isPending && "pointer-events-none")}>
-              {filteredItems.map((item) => (
-                <MediaCard key={item.id} item={item} />
-              ))}
-            </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {filteredItems.map((item) => (
+              <MediaCard key={item.id} item={item} />
+            ))}
           </div>
         ) : (
           <div className="flex flex-col gap-2">

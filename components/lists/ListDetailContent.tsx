@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,6 +41,7 @@ import { useSearchContext } from "@/components/search/SearchProvider";
 import { CreateListDialog } from "./CreateListDialog";
 import { EditListDialog } from "./EditListDialog";
 import { toast } from "@/lib/toast";
+import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -302,23 +303,14 @@ export function ListDetailContent({ list }: Props) {
   const router = useRouter();
   const { openForList } = useSearchContext();
   const [items, setItems] = useState<ListItemRow[]>(list.list_items);
-  const [view, setView] = useState<"grid" | "list">("list");
+  const [view, setView] = usePersistedState<"grid" | "list">(
+    VIEW_PREF_KEY,
+    "list"
+  );
   const [createSublistOpen, setCreateSublistOpen] = useState(false);
   const [deleteSublist, setDeleteSublist] = useState<SublistSummary | null>(null);
   const [deletingSublist, setDeletingSublist] = useState(false);
   const [editSublist, setEditSublist] = useState<SublistSummary | null>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(VIEW_PREF_KEY);
-    if (stored === "grid" || stored === "list") {
-      setView(stored);
-    }
-  }, []);
-
-  function handleViewChange(newView: "grid" | "list") {
-    setView(newView);
-    localStorage.setItem(VIEW_PREF_KEY, newView);
-  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -515,7 +507,7 @@ export function ListDetailContent({ list }: Props) {
           <div className="flex items-center rounded-md border border-border">
             <button
               type="button"
-              onClick={() => handleViewChange("grid")}
+              onClick={() => setView("grid")}
               className={cn(
                 "rounded-l-md p-2 transition-colors duration-150",
                 view === "grid"
@@ -528,7 +520,7 @@ export function ListDetailContent({ list }: Props) {
             </button>
             <button
               type="button"
-              onClick={() => handleViewChange("list")}
+              onClick={() => setView("list")}
               className={cn(
                 "rounded-r-md p-2 transition-colors duration-150",
                 view === "list"

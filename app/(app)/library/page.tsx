@@ -8,41 +8,14 @@ import { MediaCardSkeleton } from "@/components/skeletons/MediaCardSkeleton";
 
 export const metadata: Metadata = { title: "Library" };
 
-type SearchParams = Promise<{
-  status?: string;
-  sort?: string;
-  mediaType?: string;
-}>;
-
-const VALID_STATUS = ["all", "watched", "watching", "watchlist"] as const;
-const VALID_SORT = ["date_added", "watched_date", "rating", "title"] as const;
-const VALID_MEDIA_TYPE = ["all", "movie", "tv"] as const;
-
-type Status = (typeof VALID_STATUS)[number];
-type Sort = (typeof VALID_SORT)[number];
-type MediaType = (typeof VALID_MEDIA_TYPE)[number];
-
-function getDefaultSort(status: Status): Sort {
-  return status === "watchlist" ? "date_added" : "watched_date";
-}
-
-type LibraryDataProps = {
-  userId: string;
-  status: Status;
-  sort: Sort;
-  mediaType: MediaType;
-};
-
-async function LibraryData({ userId, status, sort, mediaType }: LibraryDataProps) {
+// Fetch the user's entire library once; status/mediaType/sort filtering all
+// happens client-side in LibraryContent so switching filters is instant.
+async function LibraryData({ userId }: { userId: string }) {
   const supabase = await createClient();
   let items;
 
   try {
-    items = await getUserLibrary(supabase, userId, {
-      ...(status !== "all" ? { status } : {}),
-      sort,
-      ...(mediaType !== "all" ? { mediaType } : {}),
-    });
+    items = await getUserLibrary(supabase, userId, { sort: "date_added" });
   } catch (err) {
     console.error("Library query error:", err);
     return (
@@ -54,14 +27,7 @@ async function LibraryData({ userId, status, sort, mediaType }: LibraryDataProps
     );
   }
 
-  return (
-    <LibraryContent
-      initialItems={items}
-      status={status}
-      sort={sort}
-      mediaType={mediaType}
-    />
-  );
+  return <LibraryContent initialItems={items} />;
 }
 
 function LibrarySkeleton() {
@@ -78,11 +44,7 @@ function LibrarySkeleton() {
   );
 }
 
-export default async function LibraryPage({
-  searchParams,
-}: {
-  searchParams: SearchParams;
-}) {
+export default async function LibraryPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -90,31 +52,10 @@ export default async function LibraryPage({
 
   if (!user) notFound();
 
-  const { status: rawStatus, sort: rawSort, mediaType: rawMediaType } =
-    await searchParams;
-
-  const status: Status = VALID_STATUS.includes(rawStatus as Status)
-    ? (rawStatus as Status)
-    : "all";
-  const mediaType: MediaType = VALID_MEDIA_TYPE.includes(
-    rawMediaType as MediaType
-  )
-    ? (rawMediaType as MediaType)
-    : "all";
-  // Default sort depends on status when not explicitly set
-  const sort: Sort = VALID_SORT.includes(rawSort as Sort)
-    ? (rawSort as Sort)
-    : getDefaultSort(status);
-
   return (
     <div className="mx-auto max-w-7xl px-4 pt-0 pb-8 md:px-6">
       <Suspense fallback={<LibrarySkeleton />}>
-        <LibraryData
-          userId={user.id}
-          status={status}
-          sort={sort}
-          mediaType={mediaType}
-        />
+        <LibraryData userId={user.id} />
       </Suspense>
     </div>
   );

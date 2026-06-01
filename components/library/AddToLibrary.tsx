@@ -372,22 +372,24 @@ export function AddToLibrary({
     <div className="flex w-full flex-col gap-3">
       {/* Status pills + heart */}
       <div className="flex flex-wrap items-center gap-2">
-        {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => handlePillClick(s)}
-            disabled={statusSaving}
-            className={cn(
-              "rounded-full border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
-              activeStatus === s
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-            )}
-          >
-            {STATUS_LABELS[s]}
-          </button>
-        ))}
+        <div className="flex items-center gap-1">
+          {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => handlePillClick(s)}
+              disabled={statusSaving}
+              className={cn(
+                "rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-150 sm:px-3 sm:py-1.5 sm:text-sm",
+                activeStatus === s
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+              )}
+            >
+              {STATUS_LABELS[s]}
+            </button>
+          ))}
+        </div>
 
         <button
           type="button"
@@ -400,7 +402,7 @@ export function AddToLibrary({
         >
           <Heart
             className={cn(
-              "h-4 w-4",
+              "h-5 w-5",
               userMedia.is_favorite
                 ? "fill-red-500 text-red-500"
                 : "text-muted-foreground"

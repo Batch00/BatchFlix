@@ -48,7 +48,7 @@ export default async function AppLayout({
   return (
     <>
       <TopNav userEmail={user?.email ?? null} />
-      <main className="min-h-[calc(100vh-3.5rem)] pb-24 pt-14 md:pb-0">{children}</main>
+      <main className="min-h-[calc(100vh-3.5rem)] pb-24 pt-4 md:pb-0">{children}</main>
     </>
   );
 }

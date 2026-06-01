@@ -2,21 +2,24 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { User, Film, Tv } from "lucide-react";
+import { User, Film, Tv, Globe } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
   normalizeMediaItem,
-  getDirector,
+  getKeyCrew,
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBCastMember,
+  type KeyCrew,
 } from "@/lib/tmdb";
 import { getUserMediaByTmdbId } from "@/lib/queries/library";
 import { AddToLibrary } from "@/components/library/AddToLibrary";
 import { AddToListButton } from "@/components/library/AddToListButton";
 import { MediaDetailSkeleton } from "@/components/skeletons/MediaDetailSkeleton";
 import { BackButton } from "@/components/ui/BackButton";
+import { TrailerSection } from "@/components/media/TrailerSection";
+import { StreamingProviders } from "@/components/media/StreamingProviders";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -30,7 +33,7 @@ async function fetchTMDB(
   type: string,
   id: string
 ): Promise<TMDBMovieDetail | TMDBTVDetail | null> {
-  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits`;
+  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
     next: { revalidate: 3600 },
@@ -53,6 +56,45 @@ export async function generateMetadata({
       ? (data as TMDBMovieDetail).title
       : (data as TMDBTVDetail).name;
   return { title };
+}
+
+function CrewGrid({
+  keyCrew,
+  directorLabel,
+}: {
+  keyCrew: KeyCrew;
+  directorLabel: string;
+}) {
+  const rows = [
+    keyCrew.director ? { label: directorLabel, value: keyCrew.director } : null,
+    keyCrew.writers.length > 0
+      ? { label: "Written by", value: keyCrew.writers.join(", ") }
+      : null,
+    keyCrew.cinematographer
+      ? { label: "Cinematography", value: keyCrew.cinematographer }
+      : null,
+    keyCrew.composer
+      ? { label: "Music", value: keyCrew.composer }
+      : null,
+    keyCrew.producers.length > 0
+      ? { label: "Producers", value: keyCrew.producers.join(", ") }
+      : null,
+  ].filter(Boolean) as Array<{ label: string; value: string }>;
+
+  if (!rows.length) return null;
+
+  return (
+    <div className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+      {rows.map((row) => (
+        <div key={row.label}>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground">
+            {row.label}
+          </p>
+          <p className="text-sm text-foreground">{row.value}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 async function MediaDetailData({
@@ -113,11 +155,16 @@ async function MediaDetailData({
       ? (tmdbData as TMDBMovieDetail).runtime
       : (tmdbData as TMDBTVDetail).episode_run_time?.[0];
 
-  const director =
-    mediaType === "movie"
-      ? getDirector((tmdbData as TMDBMovieDetail).credits?.crew ?? [])
-      : (tmdbData as TMDBTVDetail).created_by?.[0]?.name ?? null;
-
+  let keyCrew: KeyCrew;
+  if (mediaType === "movie") {
+    keyCrew = getKeyCrew((tmdbData as TMDBMovieDetail).credits?.crew ?? []);
+  } else {
+    const tvCrew = getKeyCrew((tmdbData as TMDBTVDetail).credits?.crew ?? []);
+    keyCrew = {
+      ...tvCrew,
+      director: (tmdbData as TMDBTVDetail).created_by?.[0]?.name ?? null,
+    };
+  }
   const directorLabel = mediaType === "movie" ? "Director" : "Created by";
 
   const cast: TMDBCastMember[] = (
@@ -126,15 +173,19 @@ async function MediaDetailData({
     .slice(0, 10)
     .sort((a, b) => a.order - b.order);
 
+  const videos = tmdbData.videos?.results ?? [];
+  const externalIds = tmdbData.external_ids ?? null;
+  const watchProviders = tmdbData["watch/providers"]?.results?.US ?? null;
+  const homepage = tmdbData.homepage ?? "";
+  const productionCompanies = (tmdbData.production_companies ?? []).slice(0, 3);
+
   const backdropPath = tmdbData.backdrop_path;
   const posterPath = tmdbData.poster_path;
 
   return (
     <div className="min-h-screen bg-background -mt-4">
-      {/* BackButton -- fixed position, sits below the nav */}
       <BackButton />
 
-      {/* Backdrop -- bleeds to nav edge (parent has -mt-4 to cancel layout pt-4) */}
       <div className="relative h-[180px] w-full overflow-hidden sm:h-[220px] md:h-[320px]">
         {backdropPath ? (
           <Image
@@ -151,10 +202,9 @@ async function MediaDetailData({
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background" />
       </div>
 
-      {/* Content */}
       <div className="mx-auto max-w-5xl px-4 pb-16 md:px-6">
         <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
-          {/* Poster -- overlaps the bottom edge of the backdrop */}
+          {/* Poster */}
           <div className="relative -mt-16 h-[210px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg shadow-xl sm:-mt-20 sm:h-[240px] sm:w-[160px] md:-mt-24 md:h-[270px] md:w-[180px]">
             {posterPath ? (
               <Image
@@ -202,21 +252,29 @@ async function MediaDetailData({
               </div>
             </div>
 
-            <div className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground md:justify-start">
-              {runtime && runtime > 0 && (
-                <span>
-                  {mediaType === "movie"
-                    ? formatRuntime(runtime)
-                    : `${runtime} min per episode`}
-                </span>
-              )}
-              {director && (
-                <span>
-                  <span className="text-foreground/60">{directorLabel}: </span>
-                  {director}
-                </span>
-              )}
-            </div>
+            {/* Runtime */}
+            {runtime && runtime > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {mediaType === "movie"
+                  ? formatRuntime(runtime)
+                  : `${runtime} min per episode`}
+              </p>
+            )}
+
+            {/* Crew grid */}
+            <CrewGrid keyCrew={keyCrew} directorLabel={directorLabel} />
+
+            {/* Studios */}
+            {productionCompanies.length > 0 && (
+              <div className="text-center md:text-left">
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Studios
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {productionCompanies.map((c) => c.name).join(", ")}
+                </p>
+              </div>
+            )}
 
             {tmdbData.overview && (
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
@@ -224,7 +282,42 @@ async function MediaDetailData({
               </p>
             )}
 
+            {/* External links */}
+            <div className="flex flex-wrap justify-center gap-2 md:justify-start">
+              {externalIds?.imdb_id && (
+                <a
+                  href={`https://www.imdb.com/title/${externalIds.imdb_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full bg-[#f5c518] px-2.5 py-1 text-xs font-bold text-black"
+                >
+                  IMDb
+                </a>
+              )}
+              {homepage && (
+                <a
+                  href={homepage}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  <Globe className="h-3 w-3" />
+                  Official Site
+                </a>
+              )}
+              <a
+                href={`https://www.themoviedb.org/${mediaType}/${tmdbData.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                TMDB
+              </a>
+            </div>
+
+            {/* Actions */}
             <div className="flex w-full flex-col items-center gap-2 md:items-start">
+              <TrailerSection videos={videos} />
               <AddToLibrary
                 mediaId={mediaItem?.id ?? null}
                 tmdbId={normalized.tmdb_id}
@@ -277,6 +370,9 @@ async function MediaDetailData({
             </div>
           </div>
         )}
+
+        {/* Streaming providers */}
+        <StreamingProviders providers={watchProviders} />
       </div>
     </div>
   );

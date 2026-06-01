@@ -19,6 +19,57 @@ export interface TMDBCrewMember {
   profile_path: string | null;
 }
 
+export interface TMDBVideo {
+  id: string;
+  key: string;
+  name: string;
+  site: string;
+  type: string;
+  official: boolean;
+  published_at: string;
+}
+
+export interface TMDBExternalIds {
+  imdb_id: string | null;
+  facebook_id: string | null;
+  instagram_id: string | null;
+  twitter_id: string | null;
+}
+
+export interface TMDBProvider {
+  provider_id: number;
+  provider_name: string;
+  logo_path: string;
+}
+
+export interface TMDBWatchProvidersRegion {
+  link: string;
+  flatrate?: TMDBProvider[];
+  rent?: TMDBProvider[];
+  buy?: TMDBProvider[];
+  ads?: TMDBProvider[];
+}
+
+export interface TMDBWatchProviders {
+  id: number;
+  results: Record<string, TMDBWatchProvidersRegion>;
+}
+
+export interface TMDBProductionCompany {
+  id: number;
+  logo_path: string | null;
+  name: string;
+  origin_country: string;
+}
+
+export interface KeyCrew {
+  director: string | null;
+  writers: string[];
+  cinematographer: string | null;
+  composer: string | null;
+  producers: string[];
+}
+
 export interface TMDBMovie {
   id: number;
   title: string;
@@ -30,6 +81,8 @@ export interface TMDBMovie {
   genres: TMDBGenre[];
   vote_average: number;
   vote_count: number;
+  homepage: string;
+  production_companies: TMDBProductionCompany[];
 }
 
 export interface TMDBMovieDetail extends TMDBMovie {
@@ -37,6 +90,9 @@ export interface TMDBMovieDetail extends TMDBMovie {
     cast: TMDBCastMember[];
     crew: TMDBCrewMember[];
   };
+  videos?: { results: TMDBVideo[] };
+  external_ids?: TMDBExternalIds;
+  "watch/providers"?: TMDBWatchProviders;
 }
 
 export interface TMDBTVShow {
@@ -52,6 +108,8 @@ export interface TMDBTVShow {
   vote_count: number;
   number_of_seasons: number;
   number_of_episodes: number;
+  homepage: string;
+  production_companies: TMDBProductionCompany[];
 }
 
 export interface TMDBTVDetail extends TMDBTVShow {
@@ -60,6 +118,9 @@ export interface TMDBTVDetail extends TMDBTVShow {
     cast: TMDBCastMember[];
     crew: TMDBCrewMember[];
   };
+  videos?: { results: TMDBVideo[] };
+  external_ids?: TMDBExternalIds;
+  "watch/providers"?: TMDBWatchProviders;
 }
 
 export interface TMDBSearchResult {
@@ -89,8 +150,21 @@ export interface TMDBSearchMultiResult {
   vote_average: number;
 }
 
-export function getDirector(crew: TMDBCrewMember[]): string | null {
-  return crew.find((c) => c.job === "Director")?.name ?? null;
+export function getKeyCrew(crew: TMDBCrewMember[]): KeyCrew {
+  const director = crew.find((c) => c.job === "Director")?.name ?? null;
+  const writers = crew
+    .filter((c) => ["Writer", "Screenplay", "Story"].includes(c.job))
+    .slice(0, 3)
+    .map((c) => c.name);
+  const cinematographer =
+    crew.find((c) => c.job === "Director of Photography")?.name ?? null;
+  const composer =
+    crew.find((c) => c.job === "Original Music Composer")?.name ?? null;
+  const producers = crew
+    .filter((c) => ["Producer", "Executive Producer"].includes(c.job))
+    .slice(0, 2)
+    .map((c) => c.name);
+  return { director, writers, cinematographer, composer, producers };
 }
 
 export type NormalizedMediaItem = {
@@ -122,7 +196,7 @@ export function normalizeMediaItem(
       runtime: m.runtime || null,
       genres: m.genres ?? [],
       overview: m.overview || null,
-      director: getDirector(m.credits?.crew ?? []),
+      director: getKeyCrew(m.credits?.crew ?? []).director,
     };
   }
   const tv = detail as TMDBTVDetail;

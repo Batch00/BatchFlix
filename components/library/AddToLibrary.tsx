@@ -371,7 +371,7 @@ export function AddToLibrary({
   return (
     <div className="flex w-full flex-col gap-3">
       {/* Status pills + heart */}
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
         <div className="flex items-center gap-1">
           {(["watchlist", "watching", "watched"] as Status[]).map((s) => (
             <button

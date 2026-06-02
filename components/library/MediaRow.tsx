@@ -22,7 +22,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { StarRating } from "./StarRating";
-import { parseISO } from "date-fns";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
@@ -70,7 +69,8 @@ export function MediaRow({ item, onRemoved }: Props) {
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
 
   function formatDate(d: string) {
-    return parseISO(d).toLocaleDateString("en-US", {
+    const [yr, mo, dy] = d.split("T")[0].split("-");
+    return new Date(+yr, +mo - 1, +dy).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",

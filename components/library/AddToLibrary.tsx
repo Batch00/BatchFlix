@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { parseISO } from "date-fns";
 import { Heart, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -32,7 +31,8 @@ function today() {
 }
 
 function formatDate(dateStr: string) {
-  return parseISO(dateStr).toLocaleDateString("en-US", {
+  const [yr, mo, dy] = dateStr.split("T")[0].split("-");
+  return new Date(+yr, +mo - 1, +dy).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",

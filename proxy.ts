@@ -7,6 +7,7 @@ const PROTECTED_PREFIXES = [
   "/stats",
   "/search",
   "/media",
+  "/person",
 ];
 
 export async function proxy(request: NextRequest) {

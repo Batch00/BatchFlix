@@ -68,10 +68,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to cache media" }, { status: 500 });
   }
 
+  function todayLocal() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
   const watched =
-    status === "watched" && !watchedDate
-      ? new Date().toISOString().slice(0, 10)
-      : watchedDate ?? null;
+    status === "watched" && !watchedDate ? todayLocal() : watchedDate ?? null;
 
   const { data: userMedia, error: insertError } = await supabase
     .schema("batchflix")

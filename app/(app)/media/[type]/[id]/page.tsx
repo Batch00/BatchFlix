@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { User, Film, Tv, Globe } from "lucide-react";
@@ -11,6 +12,7 @@ import {
   type TMDBMovieDetail,
   type TMDBTVDetail,
   type TMDBCastMember,
+  type TMDBCollection,
   type KeyCrew,
 } from "@/lib/tmdb";
 import { getUserMediaByTmdbId } from "@/lib/queries/library";
@@ -20,6 +22,8 @@ import { MediaDetailSkeleton } from "@/components/skeletons/MediaDetailSkeleton"
 import { BackButton } from "@/components/ui/BackButton";
 import { TrailerSection } from "@/components/media/TrailerSection";
 import { StreamingProviders } from "@/components/media/StreamingProviders";
+import { RecommendationsSection } from "@/components/media/RecommendationsSection";
+import { CollectionSection } from "@/components/media/CollectionSection";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -33,8 +37,17 @@ async function fetchTMDB(
   type: string,
   id: string
 ): Promise<TMDBMovieDetail | TMDBTVDetail | null> {
-  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders`;
+  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders,recommendations`;
   const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
+    next: { revalidate: 3600 },
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+async function fetchCollection(id: number): Promise<TMDBCollection | null> {
+  const res = await fetch(`https://api.themoviedb.org/3/collection/${id}`, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
     next: { revalidate: 3600 },
   });
@@ -73,9 +86,7 @@ function CrewGrid({
     keyCrew.cinematographer
       ? { label: "Cinematography", value: keyCrew.cinematographer }
       : null,
-    keyCrew.composer
-      ? { label: "Music", value: keyCrew.composer }
-      : null,
+    keyCrew.composer ? { label: "Music", value: keyCrew.composer } : null,
     keyCrew.producers.length > 0
       ? { label: "Producers", value: keyCrew.producers.join(", ") }
       : null,
@@ -96,6 +107,11 @@ function CrewGrid({
     </div>
   );
 }
+
+type LibMapRow = {
+  status: string;
+  media_items: { tmdb_id: number; media_type: string } | null;
+};
 
 async function MediaDetailData({
   type,
@@ -128,15 +144,33 @@ async function MediaDetailData({
     .select("id")
     .single();
 
-  const userMedia =
-    userId && mediaItem
-      ? await getUserMediaByTmdbId(
-          supabase,
-          userId,
-          normalized.tmdb_id,
-          mediaType
-        )
+  const collectionId =
+    mediaType === "movie"
+      ? (tmdbData as TMDBMovieDetail).belongs_to_collection?.id ?? null
       : null;
+
+  const [userMedia, collection] = await Promise.all([
+    userId && mediaItem
+      ? getUserMediaByTmdbId(supabase, userId, normalized.tmdb_id, mediaType)
+      : null,
+    collectionId ? fetchCollection(collectionId) : null,
+  ]);
+
+  const userLibraryMap: Record<string, string> = {};
+  if (userId) {
+    const { data: libRows } = await supabase
+      .schema("batchflix")
+      .from("user_media")
+      .select("status, media_items(tmdb_id, media_type)")
+      .eq("user_id", userId);
+
+    for (const row of (libRows ?? []) as unknown as LibMapRow[]) {
+      const mi = row.media_items;
+      if (mi) {
+        userLibraryMap[`${mi.media_type}:${mi.tmdb_id}`] = row.status;
+      }
+    }
+  }
 
   const title =
     mediaType === "movie"
@@ -178,6 +212,7 @@ async function MediaDetailData({
   const watchProviders = tmdbData["watch/providers"]?.results?.US ?? null;
   const homepage = tmdbData.homepage ?? "";
   const productionCompanies = (tmdbData.production_companies ?? []).slice(0, 3);
+  const recommendations = tmdbData.recommendations?.results ?? [];
 
   const backdropPath = tmdbData.backdrop_path;
   const posterPath = tmdbData.poster_path;
@@ -186,6 +221,7 @@ async function MediaDetailData({
     <div className="min-h-screen bg-background -mt-4">
       <BackButton />
 
+      {/* Backdrop */}
       <div className="relative h-[180px] w-full overflow-hidden sm:h-[220px] md:h-[320px]">
         {backdropPath ? (
           <Image
@@ -203,6 +239,7 @@ async function MediaDetailData({
       </div>
 
       <div className="mx-auto max-w-5xl px-4 pb-16 md:px-6">
+        {/* Poster + details row */}
         <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
           {/* Poster */}
           <div className="relative -mt-16 h-[210px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg shadow-xl sm:-mt-20 sm:h-[240px] sm:w-[160px] md:-mt-24 md:h-[270px] md:w-[180px]">
@@ -227,7 +264,8 @@ async function MediaDetailData({
 
           {/* Details */}
           <div className="flex w-full flex-1 flex-col gap-4 pt-2 text-center md:pt-6 md:text-left">
-            <div>
+            {/* 1. Metadata: title, genres, runtime, studios */}
+            <div className="flex flex-col gap-2">
               <h1 className="text-2xl font-bold text-foreground sm:text-3xl">
                 {title}{" "}
                 {year && (
@@ -237,7 +275,7 @@ async function MediaDetailData({
                 )}
               </h1>
 
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 md:justify-start">
+              <div className="flex flex-wrap items-center justify-center gap-2 md:justify-start">
                 <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
                   {mediaType === "movie" ? "Movie" : "TV"}
                 </span>
@@ -250,39 +288,38 @@ async function MediaDetailData({
                   </span>
                 ))}
               </div>
+
+              {runtime && runtime > 0 && (
+                <p className="text-sm text-muted-foreground">
+                  {mediaType === "movie"
+                    ? formatRuntime(runtime)
+                    : `${runtime} min per episode`}
+                </p>
+              )}
+
+              {productionCompanies.length > 0 && (
+                <div className="text-center md:text-left">
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Studios
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {productionCompanies.map((c) => c.name).join(", ")}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* Runtime */}
-            {runtime && runtime > 0 && (
-              <p className="text-sm text-muted-foreground">
-                {mediaType === "movie"
-                  ? formatRuntime(runtime)
-                  : `${runtime} min per episode`}
-              </p>
-            )}
-
-            {/* Crew grid */}
-            <CrewGrid keyCrew={keyCrew} directorLabel={directorLabel} />
-
-            {/* Studios */}
-            {productionCompanies.length > 0 && (
-              <div className="text-center md:text-left">
-                <p className="text-xs uppercase tracking-wide text-muted-foreground">
-                  Studios
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  {productionCompanies.map((c) => c.name).join(", ")}
-                </p>
-              </div>
-            )}
-
+            {/* 2. Overview */}
             {tmdbData.overview && (
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                 {tmdbData.overview}
               </p>
             )}
 
-            {/* External links */}
+            {/* 3. Crew grid */}
+            <CrewGrid keyCrew={keyCrew} directorLabel={directorLabel} />
+
+            {/* 4. External links */}
             <div className="flex flex-wrap justify-center gap-2 md:justify-start">
               {externalIds?.imdb_id && (
                 <a
@@ -315,9 +352,8 @@ async function MediaDetailData({
               </a>
             </div>
 
-            {/* Actions */}
+            {/* 5. AddToLibrary + AddToList */}
             <div className="flex w-full flex-col items-center gap-2 md:items-start">
-              <TrailerSection videos={videos} />
               <AddToLibrary
                 mediaId={mediaItem?.id ?? null}
                 tmdbId={normalized.tmdb_id}
@@ -328,20 +364,31 @@ async function MediaDetailData({
                 <AddToListButton mediaId={mediaItem.id} />
               )}
             </div>
+
+            {/* 6. Trailer */}
+            <div className="flex justify-center md:justify-start">
+              <TrailerSection videos={videos} />
+            </div>
           </div>
         </div>
 
-        {/* Cast */}
+        {/* 7. Streaming providers */}
+        <StreamingProviders providers={watchProviders} />
+
+        {/* 8. Cast */}
         {cast.length > 0 && (
-          <div className="mt-10">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">Cast</h2>
+          <div className="mt-8">
+            <h2 className="mb-3 text-lg font-semibold text-foreground">
+              Cast
+            </h2>
             <div
               className="flex gap-4 overflow-x-auto pb-4"
               style={{ WebkitOverflowScrolling: "touch" }}
             >
               {cast.map((member) => (
-                <div
+                <Link
                   key={member.id}
+                  href={`/person/${member.id}`}
                   className="flex w-20 flex-shrink-0 flex-col items-center gap-1.5"
                 >
                   <div className="relative h-20 w-20 overflow-hidden rounded-full border border-border bg-secondary">
@@ -365,14 +412,26 @@ async function MediaDetailData({
                   <p className="text-center text-xs leading-tight text-muted-foreground">
                     {member.character}
                   </p>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
         )}
 
-        {/* Streaming providers */}
-        <StreamingProviders providers={watchProviders} />
+        {/* 9. Collection (movies only) */}
+        {collection && (
+          <CollectionSection
+            collection={collection}
+            currentTmdbId={tmdbData.id}
+            userLibraryMap={userLibraryMap}
+          />
+        )}
+
+        {/* 10. More Like This */}
+        <RecommendationsSection
+          recommendations={recommendations}
+          userLibraryMap={userLibraryMap}
+        />
       </div>
     </div>
   );

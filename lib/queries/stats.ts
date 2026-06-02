@@ -1,5 +1,4 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { parseISO } from "date-fns";
 
 function localDateStr(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
@@ -10,6 +9,7 @@ export const GENRE_NORMALIZE: Record<string, string> = {
   "Sci-Fi & Fantasy": "Sci-Fi",
   "Action & Adventure": "Action",
   "War & Politics": "War",
+  "Mystery": "Mystery",
 };
 
 export function normalizeGenre(name: string): string {
@@ -188,9 +188,9 @@ export async function getStatsData(
   const monthMap = new Map<string, { year: number; month: number; count: number }>();
   for (const row of rows) {
     if (row.status !== "watched" || !row.watched_date) continue;
-    const d = parseISO(row.watched_date);
-    const year = d.getFullYear();
-    const month = d.getMonth() + 1;
+    const parts = row.watched_date.split("T")[0].split("-");
+    const year = +parts[0];
+    const month = +parts[1];
     const key = `${year}-${month}`;
     const existing = monthMap.get(key);
     if (existing) {

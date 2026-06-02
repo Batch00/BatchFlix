@@ -86,6 +86,12 @@ export interface TMDBMovie {
 }
 
 export interface TMDBMovieDetail extends TMDBMovie {
+  belongs_to_collection: {
+    id: number;
+    name: string;
+    poster_path: string | null;
+    backdrop_path: string | null;
+  } | null;
   credits: {
     cast: TMDBCastMember[];
     crew: TMDBCrewMember[];
@@ -93,6 +99,7 @@ export interface TMDBMovieDetail extends TMDBMovie {
   videos?: { results: TMDBVideo[] };
   external_ids?: TMDBExternalIds;
   "watch/providers"?: TMDBWatchProviders;
+  recommendations?: { results: TMDBSearchResult[] };
 }
 
 export interface TMDBTVShow {
@@ -121,6 +128,7 @@ export interface TMDBTVDetail extends TMDBTVShow {
   videos?: { results: TMDBVideo[] };
   external_ids?: TMDBExternalIds;
   "watch/providers"?: TMDBWatchProviders;
+  recommendations?: { results: TMDBSearchResult[] };
 }
 
 export interface TMDBSearchResult {
@@ -134,6 +142,47 @@ export interface TMDBSearchResult {
   release_date?: string;
   first_air_date?: string;
   vote_average: number;
+}
+
+export interface TMDBPerson {
+  id: number;
+  name: string;
+  biography: string;
+  birthday: string | null;
+  deathday: string | null;
+  place_of_birth: string | null;
+  profile_path: string | null;
+  known_for_department: string;
+}
+
+export interface TMDBPersonCredit {
+  id: number;
+  title?: string;
+  name?: string;
+  media_type: "movie" | "tv";
+  poster_path: string | null;
+  release_date?: string;
+  first_air_date?: string;
+  character?: string;
+  job?: string;
+  vote_average: number;
+}
+
+export interface TMDBCollectionPart {
+  id: number;
+  title: string;
+  poster_path: string | null;
+  release_date: string;
+  vote_average: number;
+}
+
+export interface TMDBCollection {
+  id: number;
+  name: string;
+  overview: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+  parts: TMDBCollectionPart[];
 }
 
 export interface TMDBSearchMultiResult {

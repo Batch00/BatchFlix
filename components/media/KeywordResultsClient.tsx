@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Film, Tv, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useListPicker } from "@/components/providers/ListPickerProvider";
 
 type MediaType = "all" | "movie" | "tv";
 
@@ -36,7 +36,7 @@ export function KeywordResultsClient({
   tvShows,
   initialLibraryMap,
 }: Props) {
-  const router = useRouter();
+  const { openListPicker } = useListPicker();
   const [mediaFilter, setMediaFilter] = useState<MediaType>("all");
   const [libraryMap, setLibraryMap] =
     useState<Record<string, LibraryEntry>>(initialLibraryMap);
@@ -61,30 +61,15 @@ export function KeywordResultsClient({
         }),
       });
       if (!res.ok) throw new Error();
-      const result = (await res.json()) as { id: string };
+      const result = (await res.json()) as { id: string; media_id: string };
       setLibraryMap((prev) => ({
         ...prev,
         [key]: { status: "watchlist", userMediaId: result.id },
       }));
       toast("Added to Watchlist", {
         action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              await fetch("/api/library/remove", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMediaId: result.id }),
-              });
-              setLibraryMap((prev) => {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-              });
-              toast("Removed");
-              router.refresh();
-            })();
-          },
+          label: "Add to List",
+          onClick: () => openListPicker(result.media_id),
         },
       });
     } catch {

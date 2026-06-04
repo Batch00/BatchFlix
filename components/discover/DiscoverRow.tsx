@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Film, Tv, Check, Plus } from "lucide-react";
+import { Film, Tv, Check, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useListPicker } from "@/components/providers/ListPickerProvider";
 
 export type DiscoverItem = {
   id: number;
@@ -26,7 +27,27 @@ type Props = {
 
 export function DiscoverRow({ title, items, initialLibraryMap }: Props) {
   const router = useRouter();
+  const { openListPicker } = useListPicker();
   const [libraryMap, setLibraryMap] = useState(initialLibraryMap);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  function updateScrollButtons() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  }
+
+  useEffect(() => {
+    updateScrollButtons();
+    const el = scrollRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(updateScrollButtons);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [items]);
 
   async function handleAdd(item: DiscoverItem) {
     const key = `${item.id}-${item.media_type}`;
@@ -41,27 +62,12 @@ export function DiscoverRow({ title, items, initialLibraryMap }: Props) {
         }),
       });
       if (!res.ok) throw new Error();
-      const result = (await res.json()) as { id: string };
+      const result = (await res.json()) as { id: string; media_id: string };
       setLibraryMap((prev) => ({ ...prev, [key]: "watchlist" }));
       toast("Added to Watchlist", {
         action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              await fetch("/api/library/remove", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMediaId: result.id }),
-              });
-              setLibraryMap((prev) => {
-                const next = { ...prev };
-                delete next[key];
-                return next;
-              });
-              toast("Removed");
-              router.refresh();
-            })();
-          },
+          label: "Add to List",
+          onClick: () => openListPicker(result.media_id),
         },
       });
     } catch {
@@ -74,84 +80,112 @@ export function DiscoverRow({ title, items, initialLibraryMap }: Props) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-      <div
-        className="flex gap-3 overflow-x-auto pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-        style={{ WebkitOverflowScrolling: "touch" }}
-      >
-        {items.map((item) => {
-          const key = `${item.id}-${item.media_type}`;
-          const status = libraryMap[key] ?? null;
-          const itemTitle = item.title ?? item.name ?? "Unknown";
-          const year = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
+      <div className="relative">
+        {/* Left scroll button -- desktop only */}
+        {canScrollLeft && (
+          <button
+            type="button"
+            onClick={() => scrollRef.current?.scrollBy({ left: -400, behavior: "smooth" })}
+            className="absolute left-0 top-1/2 z-10 hidden -translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 p-1.5 backdrop-blur-sm md:flex"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="h-4 w-4 text-white" />
+          </button>
+        )}
 
-          return (
-            <div key={key} className="relative flex w-[120px] flex-shrink-0 flex-col">
-              <Link href={`/media/${item.media_type}/${item.id}`}>
-                <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-secondary">
-                  {item.poster_path ? (
-                    <Image
-                      src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
-                      alt={itemTitle}
-                      fill
-                      className="object-cover"
-                      sizes="120px"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      {item.media_type === "movie" ? (
-                        <Film className="h-6 w-6 text-muted-foreground/40" />
-                      ) : (
-                        <Tv className="h-6 w-6 text-muted-foreground/40" />
-                      )}
-                    </div>
-                  )}
+        <div
+          ref={scrollRef}
+          onScroll={updateScrollButtons}
+          className="flex gap-3 overflow-x-auto scroll-smooth pb-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          style={{ WebkitOverflowScrolling: "touch" }}
+        >
+          {items.map((item) => {
+            const key = `${item.id}-${item.media_type}`;
+            const status = libraryMap[key] ?? null;
+            const itemTitle = item.title ?? item.name ?? "Unknown";
+            const year = (item.release_date ?? item.first_air_date ?? "").slice(0, 4);
 
-                  {status ? (
-                    <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/90">
-                      <Check className="h-3 w-3 text-white" />
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        void handleAdd(item);
-                      }}
-                      className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white"
-                    >
-                      <Plus className="h-3 w-3" />
-                    </button>
-                  )}
+            return (
+              <div key={key} className="relative flex w-[120px] flex-shrink-0 flex-col">
+                <Link href={`/media/${item.media_type}/${item.id}`}>
+                  <div className="relative aspect-[2/3] w-full overflow-hidden rounded-lg bg-secondary">
+                    {item.poster_path ? (
+                      <Image
+                        src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
+                        alt={itemTitle}
+                        fill
+                        className="object-cover"
+                        sizes="120px"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        {item.media_type === "movie" ? (
+                          <Film className="h-6 w-6 text-muted-foreground/40" />
+                        ) : (
+                          <Tv className="h-6 w-6 text-muted-foreground/40" />
+                        )}
+                      </div>
+                    )}
 
-                  {status && (
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
-                        status === "watched"
-                          ? "bg-blue-900/80 text-blue-200"
+                    {status ? (
+                      <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/90">
+                        <Check className="h-3 w-3 text-white" />
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          void handleAdd(item);
+                        }}
+                        className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white"
+                      >
+                        <Plus className="h-3 w-3" />
+                      </button>
+                    )}
+
+                    {status && (
+                      <div
+                        className={cn(
+                          "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
+                          status === "watched"
+                            ? "bg-blue-900/80 text-blue-200"
+                            : status === "watching"
+                            ? "bg-yellow-900/80 text-yellow-200"
+                            : "bg-zinc-800/80 text-zinc-300"
+                        )}
+                      >
+                        {status === "watched"
+                          ? "Watched"
                           : status === "watching"
-                          ? "bg-yellow-900/80 text-yellow-200"
-                          : "bg-zinc-800/80 text-zinc-300"
-                      )}
-                    >
-                      {status === "watched"
-                        ? "Watched"
-                        : status === "watching"
-                        ? "Watching"
-                        : "Watchlist"}
-                    </div>
-                  )}
-                </div>
-              </Link>
-              <p className="mt-1 truncate text-xs font-medium text-foreground">
-                {itemTitle}
-              </p>
-              {year && (
-                <p className="text-xs text-muted-foreground">{year}</p>
-              )}
-            </div>
-          );
-        })}
+                          ? "Watching"
+                          : "Watchlist"}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+                <p className="mt-1 truncate text-xs font-medium text-foreground">
+                  {itemTitle}
+                </p>
+                {year && (
+                  <p className="text-xs text-muted-foreground">{year}</p>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Right scroll button -- desktop only */}
+        {canScrollRight && (
+          <button
+            type="button"
+            onClick={() => scrollRef.current?.scrollBy({ left: 400, behavior: "smooth" })}
+            className="absolute right-0 top-1/2 z-10 hidden translate-x-2 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 p-1.5 backdrop-blur-sm md:flex"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="h-4 w-4 text-white" />
+          </button>
+        )}
       </div>
     </div>
   );

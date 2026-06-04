@@ -3,10 +3,10 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Film, Tv, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useListPicker } from "@/components/providers/ListPickerProvider";
 import type { TMDBSearchResult } from "@/lib/tmdb";
 
 type Props = {
@@ -18,7 +18,7 @@ export function RecommendationsSection({
   recommendations,
   userLibraryMap: initialMap,
 }: Props) {
-  const router = useRouter();
+  const { openListPicker } = useListPicker();
   const [libraryMap, setLibraryMap] = useState(initialMap);
 
   const items = recommendations
@@ -39,30 +39,15 @@ export function RecommendationsSection({
         }),
       });
       if (!res.ok) throw new Error();
-      const result = await res.json() as { id: string };
+      const result = await res.json() as { id: string; media_id: string };
       setLibraryMap((prev) => ({
         ...prev,
         [`${item.media_type}:${item.id}`]: "watchlist",
       }));
       toast("Added to Watchlist", {
         action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              await fetch("/api/library/remove", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMediaId: result.id }),
-              });
-              setLibraryMap((prev) => {
-                const next = { ...prev };
-                delete next[`${item.media_type}:${item.id}`];
-                return next;
-              });
-              toast("Removed");
-              router.refresh();
-            })();
-          },
+          label: "Add to List",
+          onClick: () => openListPicker(result.media_id),
         },
       });
     } catch {
@@ -76,7 +61,7 @@ export function RecommendationsSection({
         More Like This
       </h2>
       <div
-        className="flex gap-3 overflow-x-auto pb-4"
+        className="flex gap-3 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {items.map((item) => {

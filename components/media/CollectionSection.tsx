@@ -4,9 +4,10 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Layers, Film, Check, Plus } from "lucide-react";
+import { Layers, Film, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useListPicker } from "@/components/providers/ListPickerProvider";
 import type { TMDBCollection } from "@/lib/tmdb";
 
 type Props = {
@@ -21,6 +22,7 @@ export function CollectionSection({
   userLibraryMap: initialMap,
 }: Props) {
   const router = useRouter();
+  const { openListPicker } = useListPicker();
   const [libraryMap, setLibraryMap] = useState(initialMap);
 
   const parts = [...collection.parts].sort((a, b) =>
@@ -37,27 +39,12 @@ export function CollectionSection({
         body: JSON.stringify({ tmdbId: id, mediaType: "movie", status: "watchlist" }),
       });
       if (!res.ok) throw new Error();
-      const result = await res.json() as { id: string };
+      const result = await res.json() as { id: string; media_id: string };
       setLibraryMap((prev) => ({ ...prev, [`movie:${id}`]: "watchlist" }));
       toast("Added to Watchlist", {
         action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              await fetch("/api/library/remove", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMediaId: result.id }),
-              });
-              setLibraryMap((prev) => {
-                const next = { ...prev };
-                delete next[`movie:${id}`];
-                return next;
-              });
-              toast("Removed");
-              router.refresh();
-            })();
-          },
+          label: "Add to List",
+          onClick: () => openListPicker(result.media_id),
         },
       });
     } catch {
@@ -77,7 +64,7 @@ export function CollectionSection({
       </h2>
 
       <div
-        className="flex gap-3 overflow-x-auto pb-4"
+        className="flex gap-3 overflow-x-auto scroll-smooth pb-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {parts.map((part) => {
@@ -87,7 +74,7 @@ export function CollectionSection({
           return (
             <div
               key={part.id}
-              className="group relative flex w-[120px] flex-shrink-0 flex-col"
+              className="relative flex w-[120px] flex-shrink-0 flex-col"
             >
               <Link href={`/media/movie/${part.id}`}>
                 <div
@@ -110,12 +97,23 @@ export function CollectionSection({
                     </div>
                   )}
 
-                  {status === "watched" ? (
-                    <div className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary/90">
-                      <Check className="h-3 w-3 text-white" />
+                  {status ? (
+                    <div
+                      className={cn(
+                        "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
+                        status === "watched"
+                          ? "bg-blue-900/80 text-blue-200"
+                          : status === "watching"
+                          ? "bg-yellow-900/80 text-yellow-200"
+                          : "bg-zinc-800/80 text-zinc-300"
+                      )}
+                    >
+                      {status === "watched"
+                        ? "Watched"
+                        : status === "watching"
+                        ? "Watching"
+                        : "Watchlist"}
                     </div>
-                  ) : status ? (
-                    <div className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-yellow-400" />
                   ) : (
                     !isCurrent && (
                       <button

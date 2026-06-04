@@ -320,7 +320,7 @@ async function MediaDetailData({
                 {tmdbData.genres?.map((g) => (
                   <span
                     key={g.id}
-                    className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
+                    className="rounded-full border border-[#2563EB]/40 bg-[#1f1f1f] px-3 py-1 text-xs text-white"
                   >
                     {g.name}
                   </span>
@@ -333,9 +333,9 @@ async function MediaDetailData({
                     <Link
                       key={kw.id}
                       href={`/keywords/${kw.id}?name=${encodeURIComponent(kw.name)}`}
-                      className="cursor-pointer rounded-full border border-[#1f1f1f] px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[#2563EB]/60 hover:text-white"
+                      className="rounded-full border border-[#1f1f1f] bg-transparent px-2.5 py-0.5 text-xs text-[#71717a] transition-colors hover:border-[#2563EB]/60 hover:text-white"
                     >
-                      {kw.name}
+                      #{kw.name}
                     </Link>
                   ))}
                 </div>

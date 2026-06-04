@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Film, Tv, Check, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { useListPicker } from "@/components/providers/ListPickerProvider";
 import type { TMDBPersonCredit } from "@/lib/tmdb";
 
 type Tab = "acting" | "directing";
@@ -102,7 +102,7 @@ export function PersonCreditsClient({
   directingCredits,
   libraryMap: initialMap,
 }: Props) {
-  const router = useRouter();
+  const { openListPicker } = useListPicker();
   const [bioExpanded, setBioExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("acting");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -135,30 +135,15 @@ export function PersonCreditsClient({
         }),
       });
       if (!res.ok) throw new Error();
-      const result = await res.json() as { id: string };
+      const result = await res.json() as { id: string; media_id: string };
       setLibraryMap((prev) => ({
         ...prev,
         [`${credit.id}-${credit.media_type}`]: "watchlist",
       }));
       toast("Added to Watchlist", {
         action: {
-          label: "Undo",
-          onClick: () => {
-            void (async () => {
-              await fetch("/api/library/remove", {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userMediaId: result.id }),
-              });
-              setLibraryMap((prev) => {
-                const next = { ...prev };
-                delete next[`${credit.id}-${credit.media_type}`];
-                return next;
-              });
-              toast("Removed");
-              router.refresh();
-            })();
-          },
+          label: "Add to List",
+          onClick: () => openListPicker(result.media_id),
         },
       });
     } catch {

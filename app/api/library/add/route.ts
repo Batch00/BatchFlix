@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
+import { markAllEpisodesWatched } from "@/lib/tmdb-episodes";
 
 const schema = z.object({
   tmdbId: z.number().int().positive(),
@@ -94,6 +95,11 @@ export async function POST(request: NextRequest) {
 
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
+  }
+
+  // When adding a TV show as watched, auto-mark all episodes watched
+  if (status === "watched" && mediaType === "tv" && mediaItem?.id) {
+    await markAllEpisodesWatched(user.id, mediaItem.id, tmdbId, watched ?? null);
   }
 
   return NextResponse.json(userMedia, { status: 200 });

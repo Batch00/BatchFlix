@@ -478,6 +478,7 @@ async function MediaDetailData({
             seasons={tvSeasons}
             initialProgress={tvProgress}
             userId={userId}
+            isShowWatched={userMedia?.status === "watched"}
           />
         )}
 

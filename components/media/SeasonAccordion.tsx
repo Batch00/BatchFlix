@@ -27,6 +27,7 @@ type Props = {
   seasons: TMDBSeason[];
   initialProgress: InitialProgressRow[];
   userId: string | null;
+  isShowWatched: boolean;
 };
 
 function progressKey(season: number, episode: number) {
@@ -43,6 +44,7 @@ export function SeasonAccordion({
   seasons,
   initialProgress,
   userId,
+  isShowWatched,
 }: Props) {
   const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
   const [episodeCache, setEpisodeCache] = useState<Record<number, TMDBEpisode[]>>({});
@@ -195,7 +197,10 @@ export function SeasonAccordion({
           const watchedCount = Array.from(
             { length: season.episode_count },
             (_, i) => i + 1
-          ).filter((ep) => progress[progressKey(season.season_number, ep)]?.watched).length;
+          ).filter((ep) => {
+            const epProg = progress[progressKey(season.season_number, ep)];
+            return epProg ? epProg.watched : isShowWatched;
+          }).length;
           const total = season.episode_count;
           const pct = total > 0 ? (watchedCount / total) * 100 : 0;
 
@@ -262,7 +267,8 @@ export function SeasonAccordion({
                       {episodes.map((ep) => {
                         const key = progressKey(season.season_number, ep.episode_number);
                         const epProgress = progress[key];
-                        const isWatched = epProgress?.watched ?? false;
+                        // If show is marked watched and no explicit episode progress exists, treat as watched
+                        const isWatched = epProgress ? epProgress.watched : isShowWatched;
 
                         return (
                           <div

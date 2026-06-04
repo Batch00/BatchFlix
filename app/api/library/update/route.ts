@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { markAllEpisodesWatched } from "@/lib/tmdb-episodes";
 
 const schema = z.object({
   userMediaId: z.string().uuid(),
@@ -219,6 +220,22 @@ export async function PATCH(request: NextRequest) {
             .eq("media_id", mediaId);
         }
       }
+    }
+  }
+
+  // When a TV show is marked watched, auto-mark all episodes watched
+  if (status === "watched" && existing?.media_id) {
+    const { data: tvMediaItem } = await supabase
+      .schema("batchflix")
+      .from("media_items")
+      .select("tmdb_id, media_type")
+      .eq("id", existing.media_id as string)
+      .maybeSingle();
+
+    const mi = tvMediaItem as { tmdb_id: number; media_type: string } | null;
+    if (mi?.media_type === "tv") {
+      const wDate = typeof watchedDate === "string" ? watchedDate : null;
+      await markAllEpisodesWatched(user.id, existing.media_id as string, mi.tmdb_id, wDate);
     }
   }
 

@@ -40,11 +40,6 @@ export async function generateMetadata({
   return { title: data.name };
 }
 
-type LibMapRow = {
-  status: string;
-  media_items: { tmdb_id: number; media_type: string } | null;
-};
-
 async function PersonDetailData({
   id,
   userId,
@@ -64,13 +59,23 @@ async function PersonDetailData({
     const { data: libRows } = await supabase
       .schema("batchflix")
       .from("user_media")
-      .select("status, media_items(tmdb_id, media_type)")
+      .select("status, media_items!inner(tmdb_id, media_type)")
       .eq("user_id", userId);
 
-    for (const row of (libRows ?? []) as unknown as LibMapRow[]) {
-      const mi = row.media_items;
-      if (mi) {
-        libraryMap[`${mi.tmdb_id}-${mi.media_type}`] = row.status;
+    for (const row of (libRows ?? []) as unknown as Array<Record<string, unknown>>) {
+      const status = row.status as string;
+      const rawMi = row.media_items;
+      // PostgREST may return the embedded relation as an array or a single object
+      const mi = Array.isArray(rawMi)
+        ? (rawMi as Array<{ tmdb_id: unknown; media_type: unknown }>)[0]
+        : (rawMi as { tmdb_id: unknown; media_type: unknown } | null);
+      if (
+        mi &&
+        typeof mi.tmdb_id === "number" &&
+        typeof mi.media_type === "string" &&
+        (mi.media_type === "movie" || mi.media_type === "tv")
+      ) {
+        libraryMap[`${mi.tmdb_id}-${mi.media_type}`] = status;
       }
     }
   }

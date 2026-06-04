@@ -120,7 +120,7 @@ export function PersonCreditsClient({
   const filtered = activeCredits
     .filter((c) => mediaFilter === "all" || c.media_type === mediaFilter)
     .filter(
-      (c) => !libraryOnly || !!libraryMap[`${c.media_type}:${c.id}`]
+      (c) => !libraryOnly || !!libraryMap[`${c.id}-${c.media_type}`]
     );
 
   async function handleAdd(credit: TMDBPersonCredit) {
@@ -138,7 +138,7 @@ export function PersonCreditsClient({
       const result = await res.json() as { id: string };
       setLibraryMap((prev) => ({
         ...prev,
-        [`${credit.media_type}:${credit.id}`]: "watchlist",
+        [`${credit.id}-${credit.media_type}`]: "watchlist",
       }));
       toast("Added to Watchlist", {
         action: {
@@ -152,7 +152,7 @@ export function PersonCreditsClient({
               });
               setLibraryMap((prev) => {
                 const next = { ...prev };
-                delete next[`${credit.media_type}:${credit.id}`];
+                delete next[`${credit.id}-${credit.media_type}`];
                 return next;
               });
               toast("Removed");
@@ -259,7 +259,7 @@ export function PersonCreditsClient({
             <CreditCard
               key={`${credit.media_type}-${credit.id}`}
               credit={credit}
-              status={libraryMap[`${credit.media_type}:${credit.id}`] ?? null}
+              status={libraryMap[`${credit.id}-${credit.media_type}`] ?? null}
               onAdd={handleAdd}
             />
           ))}

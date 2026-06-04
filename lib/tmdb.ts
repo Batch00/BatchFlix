@@ -3,6 +3,29 @@ export interface TMDBGenre {
   name: string;
 }
 
+export interface TMDBKeyword {
+  id: number;
+  name: string;
+}
+
+export interface TMDBSeason {
+  season_number: number;
+  name: string;
+  episode_count: number;
+  air_date: string | null;
+  poster_path: string | null;
+}
+
+export interface TMDBEpisode {
+  episode_number: number;
+  name: string;
+  overview: string;
+  still_path: string | null;
+  air_date: string | null;
+  runtime: number | null;
+  vote_average: number;
+}
+
 export interface TMDBCastMember {
   id: number;
   name: string;
@@ -100,6 +123,7 @@ export interface TMDBMovieDetail extends TMDBMovie {
   external_ids?: TMDBExternalIds;
   "watch/providers"?: TMDBWatchProviders;
   recommendations?: { results: TMDBSearchResult[] };
+  keywords?: { keywords: TMDBKeyword[] };
 }
 
 export interface TMDBTVShow {
@@ -117,6 +141,7 @@ export interface TMDBTVShow {
   number_of_episodes: number;
   homepage: string;
   production_companies: TMDBProductionCompany[];
+  seasons?: TMDBSeason[];
 }
 
 export interface TMDBTVDetail extends TMDBTVShow {
@@ -129,6 +154,7 @@ export interface TMDBTVDetail extends TMDBTVShow {
   external_ids?: TMDBExternalIds;
   "watch/providers"?: TMDBWatchProviders;
   recommendations?: { results: TMDBSearchResult[] };
+  keywords?: { results: TMDBKeyword[] };
 }
 
 export interface TMDBSearchResult {
@@ -227,6 +253,7 @@ export type NormalizedMediaItem = {
   genres: TMDBGenre[];
   overview: string | null;
   director: string | null;
+  total_episodes?: number | null;
 };
 
 export function normalizeMediaItem(
@@ -260,6 +287,7 @@ export function normalizeMediaItem(
     genres: tv.genres ?? [],
     overview: tv.overview || null,
     director: tv.created_by?.[0]?.name ?? null,
+    total_episodes: tv.number_of_episodes ?? null,
   };
 }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const TMDB_BASE = "https://api.themoviedb.org/3";
-const ALLOWED_PREFIXES = ["/search", "/movie", "/tv", "/person", "/collection", "/configuration"];
+const ALLOWED_PREFIXES = ["/search", "/movie", "/tv", "/person", "/collection", "/configuration", "/trending", "/keyword", "/discover"];
 const NO_CACHE_PREFIXES = ["/search"];
 
 export async function GET(

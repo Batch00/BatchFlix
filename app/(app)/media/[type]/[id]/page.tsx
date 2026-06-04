@@ -13,6 +13,8 @@ import {
   type TMDBTVDetail,
   type TMDBCastMember,
   type TMDBCollection,
+  type TMDBKeyword,
+  type TMDBSeason,
   type KeyCrew,
 } from "@/lib/tmdb";
 import { getUserMediaByTmdbId } from "@/lib/queries/library";
@@ -24,6 +26,7 @@ import { TrailerSection } from "@/components/media/TrailerSection";
 import { StreamingProviders } from "@/components/media/StreamingProviders";
 import { RecommendationsSection } from "@/components/media/RecommendationsSection";
 import { CollectionSection } from "@/components/media/CollectionSection";
+import { SeasonAccordion } from "@/components/media/SeasonAccordion";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -37,7 +40,7 @@ async function fetchTMDB(
   type: string,
   id: string
 ): Promise<TMDBMovieDetail | TMDBTVDetail | null> {
-  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders,recommendations`;
+  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders,recommendations,keywords`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
     next: { revalidate: 3600 },
@@ -214,6 +217,41 @@ async function MediaDetailData({
   const productionCompanies = (tmdbData.production_companies ?? []).slice(0, 3);
   const recommendations = tmdbData.recommendations?.results ?? [];
 
+  const rawKeywords: TMDBKeyword[] =
+    mediaType === "movie"
+      ? ((tmdbData as TMDBMovieDetail).keywords?.keywords ?? [])
+      : ((tmdbData as TMDBTVDetail).keywords?.results ?? []);
+  const keywords = rawKeywords.slice(0, 10);
+
+  const tvSeasons: TMDBSeason[] =
+    mediaType === "tv"
+      ? ((tmdbData as TMDBTVDetail).seasons ?? []).filter(
+          (s) => s.season_number > 0
+        )
+      : [];
+
+  type TVProgressRow = {
+    season_number: number;
+    episode_number: number;
+    watched: boolean;
+    watched_date: string | null;
+    rating: number | null;
+  };
+  let tvProgress: TVProgressRow[] = [];
+  if (userId && mediaItem && mediaType === "tv") {
+    try {
+      const { data } = await supabase
+        .schema("batchflix")
+        .from("tv_progress")
+        .select("season_number, episode_number, watched, watched_date, rating")
+        .eq("user_id", userId)
+        .eq("media_id", mediaItem.id);
+      tvProgress = (data ?? []) as TVProgressRow[];
+    } catch {
+      // tv_progress table may not exist yet
+    }
+  }
+
   const backdropPath = tmdbData.backdrop_path;
   const posterPath = tmdbData.poster_path;
 
@@ -288,6 +326,20 @@ async function MediaDetailData({
                   </span>
                 ))}
               </div>
+
+              {keywords.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-1.5 md:justify-start">
+                  {keywords.map((kw) => (
+                    <Link
+                      key={kw.id}
+                      href={`/keywords/${kw.id}?name=${encodeURIComponent(kw.name)}`}
+                      className="cursor-pointer rounded-full border border-[#1f1f1f] px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[#2563EB]/60 hover:text-white"
+                    >
+                      {kw.name}
+                    </Link>
+                  ))}
+                </div>
+              )}
 
               {runtime && runtime > 0 && (
                 <p className="text-sm text-muted-foreground">
@@ -418,7 +470,18 @@ async function MediaDetailData({
           </div>
         )}
 
-        {/* 9. Collection (movies only) */}
+        {/* 9. Seasons & Episodes (TV only) */}
+        {mediaType === "tv" && tvSeasons.length > 0 && mediaItem && (
+          <SeasonAccordion
+            tmdbId={tmdbData.id}
+            mediaId={mediaItem.id}
+            seasons={tvSeasons}
+            initialProgress={tvProgress}
+            userId={userId}
+          />
+        )}
+
+        {/* 10. Collection (movies only) */}
         {collection && (
           <CollectionSection
             collection={collection}
@@ -427,7 +490,7 @@ async function MediaDetailData({
           />
         )}
 
-        {/* 10. More Like This */}
+        {/* 11. More Like This */}
         <RecommendationsSection
           recommendations={recommendations}
           userLibraryMap={userLibraryMap}

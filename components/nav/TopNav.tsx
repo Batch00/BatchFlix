@@ -12,6 +12,7 @@ import {
   RotateCw,
   House,
   LayoutList,
+  Compass,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,7 @@ const navLinks = [
   { href: "/lists", label: "Lists" },
   { href: "/stats", label: "Stats" },
   { href: "/favorites", label: "Favorites" },
+  { href: "/discover", label: "Discover" },
 ];
 
 const bottomNavItems = [
@@ -45,6 +47,7 @@ const bottomNavItems = [
   { href: "/lists", icon: LayoutList, label: "Lists" },
   { href: "/favorites", icon: Heart, label: "Favorites" },
   { href: "/stats", icon: BarChart2, label: "Stats" },
+  { href: "/discover", icon: Compass, label: "Discover" },
 ] as const;
 
 type Props = {
@@ -265,14 +268,6 @@ export function TopNav({ userEmail }: Props) {
               </Link>
             );
           })}
-          <button
-            type="button"
-            onClick={open}
-            className="flex flex-col items-center gap-0.5"
-          >
-            <Search size={22} className="text-[#71717a]" />
-            <span className="text-[10px] text-[#71717a]">Search</span>
-          </button>
         </div>
       </nav>
     </>

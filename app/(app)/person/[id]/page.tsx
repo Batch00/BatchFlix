@@ -70,7 +70,7 @@ async function PersonDetailData({
     for (const row of (libRows ?? []) as unknown as LibMapRow[]) {
       const mi = row.media_items;
       if (mi) {
-        libraryMap[`${mi.media_type}:${mi.tmdb_id}`] = row.status;
+        libraryMap[`${mi.tmdb_id}-${mi.media_type}`] = row.status;
       }
     }
   }

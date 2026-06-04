@@ -28,6 +28,10 @@ function StatusBadge({ status }: { status: string }) {
 export function MediaCard({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
+  const watched = item.watchedEpisodes ?? 0;
+  const total = m.total_episodes ?? 0;
+  const showProgress = m.media_type === "tv" && watched > 0 && total > 0;
+  const pct = showProgress ? Math.min((watched / total) * 100, 100) : 0;
 
   return (
     <Link
@@ -63,6 +67,15 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
         </div>
 
         <StatusBadge status={status} />
+
+        {showProgress && (
+          <div className="absolute bottom-6 left-0 right-0 h-[3px] bg-black/40">
+            <div
+              className="h-full bg-[#2563EB]"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        )}
 
         <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/80 via-transparent to-transparent p-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
           <p className="line-clamp-2 text-xs font-medium text-white">

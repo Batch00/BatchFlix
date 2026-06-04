@@ -12,6 +12,7 @@ export type MediaItemRow = {
   genres: Array<{ id: number; name: string }>;
   overview: string | null;
   director: string | null;
+  total_episodes: number | null;
   created_at: string;
   updated_at: string;
 };
@@ -28,6 +29,7 @@ export type UserMediaRow = {
   created_at: string;
   updated_at: string;
   media_items: MediaItemRow;
+  watchedEpisodes?: number;
 };
 
 type LibraryFilters = {
@@ -86,6 +88,33 @@ export async function getUserLibrary(
   } else if (sort === "rating") {
     // Ensure nulls are last after DB sort (belt-and-suspenders)
     rows = rows.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+  }
+
+  // Attach TV episode progress counts
+  const tvRows = rows.filter((r) => r.media_items?.media_type === "tv");
+  if (tvRows.length > 0) {
+    try {
+      const mediaIds = tvRows.map((r) => r.media_id);
+      const { data: progressData } = await supabase
+        .schema("batchflix")
+        .from("tv_progress")
+        .select("media_id")
+        .eq("user_id", userId)
+        .eq("watched", true)
+        .in("media_id", mediaIds);
+
+      const progressMap: Record<string, number> = {};
+      for (const p of progressData ?? []) {
+        progressMap[p.media_id] = (progressMap[p.media_id] ?? 0) + 1;
+      }
+      rows = rows.map((r) =>
+        r.media_items?.media_type === "tv"
+          ? { ...r, watchedEpisodes: progressMap[r.media_id] ?? 0 }
+          : r
+      );
+    } catch {
+      // tv_progress table may not exist yet; silently skip
+    }
   }
 
   return rows;

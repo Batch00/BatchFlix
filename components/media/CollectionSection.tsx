@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Layers, Film, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -19,6 +20,7 @@ export function CollectionSection({
   currentTmdbId,
   userLibraryMap: initialMap,
 }: Props) {
+  const router = useRouter();
   const [libraryMap, setLibraryMap] = useState(initialMap);
 
   const parts = [...collection.parts].sort((a, b) =>
@@ -35,8 +37,29 @@ export function CollectionSection({
         body: JSON.stringify({ tmdbId: id, mediaType: "movie", status: "watchlist" }),
       });
       if (!res.ok) throw new Error();
+      const result = await res.json() as { id: string };
       setLibraryMap((prev) => ({ ...prev, [`movie:${id}`]: "watchlist" }));
-      toast.success("Added to watchlist");
+      toast("Added to Watchlist", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              await fetch("/api/library/remove", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userMediaId: result.id }),
+              });
+              setLibraryMap((prev) => {
+                const next = { ...prev };
+                delete next[`movie:${id}`];
+                return next;
+              });
+              toast("Removed");
+              router.refresh();
+            })();
+          },
+        },
+      });
     } catch {
       toast.error("Could not add to library");
     }
@@ -101,9 +124,9 @@ export function CollectionSection({
                           e.preventDefault();
                           void handleAdd(part.id);
                         }}
-                        className="absolute right-1.5 top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-black/60 transition-colors hover:bg-primary/90 group-hover:flex"
+                        className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white"
                       >
-                        <Plus className="h-3 w-3 text-white" />
+                        <Plus className="h-3 w-3" />
                       </button>
                     )
                   )}

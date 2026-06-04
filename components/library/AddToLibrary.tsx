@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Heart, Loader2 } from "lucide-react";
+import { Heart, Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "./StarRating";
@@ -77,6 +77,8 @@ export function AddToLibrary({
   const [saving, setSaving] = useState(false);
   const [statusSaving, setStatusSaving] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+  const removeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Pill click: if same status, toggle panel; if different, save status + open panel
   async function handlePillClick(newStatus: Status) {
@@ -183,12 +185,95 @@ export function AddToLibrary({
       setNotes(addNotes);
       setAddPanelOpen(false);
       router.refresh();
-      toast.success("Added to library");
+      toast("Added to library", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              try {
+                await fetch("/api/library/remove", {
+                  method: "DELETE",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userMediaId: created.id }),
+                });
+                setUserMedia(null);
+                toast("Removed");
+                router.refresh();
+              } catch {
+                toast.error("Failed to undo");
+              }
+            })();
+          },
+        },
+      });
     } catch {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setAddSaving(false);
     }
+  }
+
+  function showConfirmRemove() {
+    setConfirmRemove(true);
+    if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+    removeTimerRef.current = setTimeout(() => setConfirmRemove(false), 5000);
+  }
+
+  function cancelRemove() {
+    setConfirmRemove(false);
+    if (removeTimerRef.current) clearTimeout(removeTimerRef.current);
+  }
+
+  async function handleRemove() {
+    if (!userMedia) return;
+    const snapshot = { ...userMedia };
+    const snapshotStatus = activeStatus;
+
+    const res = await fetch("/api/library/remove", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userMediaId: userMedia.id }),
+    });
+
+    if (!res.ok) {
+      toast.error("Could not remove from library");
+      return;
+    }
+
+    setUserMedia(null);
+    setConfirmRemove(false);
+
+    toast("Removed from library", {
+      action: {
+        label: "Undo",
+        onClick: () => {
+          void (async () => {
+            try {
+              const addRes = await fetch("/api/library/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  tmdbId,
+                  mediaType,
+                  status: snapshotStatus,
+                  rating: snapshot.rating ?? undefined,
+                  watchedDate: snapshot.watched_date ?? undefined,
+                  notes: snapshot.notes ?? undefined,
+                }),
+              });
+              if (!addRes.ok) throw new Error();
+              const created = await addRes.json();
+              setUserMedia({ ...created, media_items: null } as UserMediaRow);
+              setActiveStatus(snapshotStatus);
+              toast("Restored");
+              router.refresh();
+            } catch {
+              toast.error("Failed to undo");
+            }
+          })();
+        },
+      },
+    });
   }
 
   async function toggleFavorite() {
@@ -485,6 +570,37 @@ export function AddToLibrary({
           </Button>
         </div>
       )}
+
+      {/* Remove from library */}
+      <div className="flex items-center gap-2">
+        {confirmRemove ? (
+          <>
+            <button
+              type="button"
+              onClick={() => void handleRemove()}
+              className="text-xs text-red-400 transition-colors hover:text-red-300"
+            >
+              Confirm remove
+            </button>
+            <button
+              type="button"
+              onClick={cancelRemove}
+              className="text-xs text-[#71717a] transition-colors hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            type="button"
+            onClick={showConfirmRemove}
+            className="flex items-center gap-1 text-xs text-[#71717a] transition-colors hover:text-red-400"
+          >
+            <Trash2 className="h-3 w-3" />
+            Remove from library
+          </button>
+        )}
+      </div>
     </div>
   );
 }

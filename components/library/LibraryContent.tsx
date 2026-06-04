@@ -82,14 +82,16 @@ function sortItems(rows: UserMediaRow[], sort: Sort): UserMediaRow[] {
   const copy = [...rows];
   switch (sort) {
     case "date_added":
-      return copy.sort((a, b) => b.created_at.localeCompare(a.created_at));
+      return copy.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
     case "watched_date":
-      return copy.sort((a, b) => {
-        if (!a.watched_date && !b.watched_date) return 0;
-        if (!a.watched_date) return 1;
-        if (!b.watched_date) return -1;
-        return b.watched_date.localeCompare(a.watched_date);
-      });
+      return copy.sort(
+        (a, b) =>
+          new Date(b.watched_date ?? "1900-01-01").getTime() -
+          new Date(a.watched_date ?? "1900-01-01").getTime()
+      );
     case "rating":
       return copy.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
     case "title":

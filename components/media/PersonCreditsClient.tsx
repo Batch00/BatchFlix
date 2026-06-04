@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Film, Tv, Check, Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -63,9 +64,9 @@ function CreditCard({
                 e.preventDefault();
                 onAdd(credit);
               }}
-              className="absolute right-1.5 top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-black/60 transition-colors hover:bg-primary/90 group-hover:flex"
+              className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white"
             >
-              <Plus className="h-3 w-3 text-white" />
+              <Plus className="h-3 w-3" />
             </button>
           )}
 
@@ -101,11 +102,16 @@ export function PersonCreditsClient({
   directingCredits,
   libraryMap: initialMap,
 }: Props) {
+  const router = useRouter();
   const [bioExpanded, setBioExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("acting");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [libraryOnly, setLibraryOnly] = useState(false);
   const [libraryMap, setLibraryMap] = useState(initialMap);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
 
   const hasBoth = castCredits.length > 0 && directingCredits.length > 0;
   const activeCredits =
@@ -129,11 +135,32 @@ export function PersonCreditsClient({
         }),
       });
       if (!res.ok) throw new Error();
+      const result = await res.json() as { id: string };
       setLibraryMap((prev) => ({
         ...prev,
         [`${credit.media_type}:${credit.id}`]: "watchlist",
       }));
-      toast.success("Added to watchlist");
+      toast("Added to Watchlist", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              await fetch("/api/library/remove", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userMediaId: result.id }),
+              });
+              setLibraryMap((prev) => {
+                const next = { ...prev };
+                delete next[`${credit.media_type}:${credit.id}`];
+                return next;
+              });
+              toast("Removed");
+              router.refresh();
+            })();
+          },
+        },
+      });
     } catch {
       toast.error("Could not add to library");
     }

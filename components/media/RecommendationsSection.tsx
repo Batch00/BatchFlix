@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Film, Tv, Check, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
@@ -17,6 +18,7 @@ export function RecommendationsSection({
   recommendations,
   userLibraryMap: initialMap,
 }: Props) {
+  const router = useRouter();
   const [libraryMap, setLibraryMap] = useState(initialMap);
 
   const items = recommendations
@@ -37,11 +39,32 @@ export function RecommendationsSection({
         }),
       });
       if (!res.ok) throw new Error();
+      const result = await res.json() as { id: string };
       setLibraryMap((prev) => ({
         ...prev,
         [`${item.media_type}:${item.id}`]: "watchlist",
       }));
-      toast.success("Added to watchlist");
+      toast("Added to Watchlist", {
+        action: {
+          label: "Undo",
+          onClick: () => {
+            void (async () => {
+              await fetch("/api/library/remove", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userMediaId: result.id }),
+              });
+              setLibraryMap((prev) => {
+                const next = { ...prev };
+                delete next[`${item.media_type}:${item.id}`];
+                return next;
+              });
+              toast("Removed");
+              router.refresh();
+            })();
+          },
+        },
+      });
     } catch {
       toast.error("Could not add to library");
     }
@@ -98,9 +121,9 @@ export function RecommendationsSection({
                         e.preventDefault();
                         void handleAdd(item);
                       }}
-                      className="absolute right-1.5 top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-black/60 transition-colors hover:bg-primary/90 group-hover:flex"
+                      className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-[#2563EB] text-white"
                     >
-                      <Plus className="h-3 w-3 text-white" />
+                      <Plus className="h-3 w-3" />
                     </button>
                   )}
 

@@ -6,6 +6,7 @@ export async function markAllEpisodesWatched(
   tmdbId: number,
   watchedDate: string | null
 ): Promise<void> {
+  console.log("[markAllEpisodesWatched] called", { userId, mediaId, tmdbId });
   const dateStr = watchedDate ?? new Date().toISOString().slice(0, 10);
 
   const showRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}`, {

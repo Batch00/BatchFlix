@@ -258,7 +258,7 @@ async function MediaDetailData({
   let newSeasons: typeof tvSeasons = [];
   let seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
 
-  if (mediaType === "tv" && userMedia && tvProgress.length > 0) {
+  if (mediaType === "tv" && userMedia?.status === "watched" && tvProgress.length > 0) {
     const progressBySeason = new Map<number, Set<number>>();
     for (const row of tvProgress) {
       if (!progressBySeason.has(row.season_number)) {
@@ -462,8 +462,8 @@ async function MediaDetailData({
           </div>
         </div>
 
-        {/* 7. New season banner (TV only) */}
-        {mediaType === "tv" && mediaItem && (newSeasons.length > 0 || seasonsWithNewEpisodes.length > 0) && (
+        {/* 7. New season banner (TV only, watched shows only) */}
+        {mediaType === "tv" && mediaItem && userMedia?.status === "watched" && (newSeasons.length > 0 || seasonsWithNewEpisodes.length > 0) && (
           <NewSeasonBanner
             newSeasons={newSeasons}
             seasonsWithNewEpisodes={seasonsWithNewEpisodes}

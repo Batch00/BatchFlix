@@ -223,8 +223,9 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
-  // When a TV show is marked watched, auto-mark all episodes watched
-  if (status === "watched" && existing?.media_id) {
+  // When a TV show transitions to watched for the first time, auto-mark all episodes watched.
+  // Guard against re-triggering when show is already watched (e.g. user re-saves rating).
+  if (status === "watched" && existing?.status !== "watched" && existing?.media_id) {
     const { data: tvMediaItem } = await supabase
       .schema("batchflix")
       .from("media_items")

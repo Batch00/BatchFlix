@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
 
   const { mediaId, tmdbId, seasons } = parsed.data;
 
+  console.log("[continue-watching] POST", { mediaId, tmdbId, seasons, userId: user.id });
+
   if (seasons.length === 0) {
     return NextResponse.json({ success: true, message: "No seasons to update" });
   }

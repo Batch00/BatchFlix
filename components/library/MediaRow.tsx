@@ -173,8 +173,8 @@ export function MediaRow({ item, onRemoved }: Props) {
 
   const watched = item.watchedEpisodes ?? 0;
   const total = m.total_episodes ?? 0;
-  const showProgress = rowStatus === "watching" && m.media_type === "tv" && watched > 0 && total > 0;
-  const pct = showProgress ? Math.min((watched / total) * 100, 100) : 0;
+  const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
+  const pct = total > 0 ? (watched / total) * 100 : 0;
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80 md:items-center">

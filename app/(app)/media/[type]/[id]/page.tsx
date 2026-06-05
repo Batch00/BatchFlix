@@ -27,6 +27,7 @@ import { StreamingProviders } from "@/components/media/StreamingProviders";
 import { RecommendationsSection } from "@/components/media/RecommendationsSection";
 import { CollectionSection } from "@/components/media/CollectionSection";
 import { SeasonAccordion } from "@/components/media/SeasonAccordion";
+import { NewSeasonBanner } from "@/components/media/NewSeasonBanner";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -252,6 +253,43 @@ async function MediaDetailData({
     }
   }
 
+  // New season detection (TV only, when user has the show in library)
+  type NewSeasonWithEpisodes = { season_number: number; newEpisodeCount: number };
+  let newSeasons: typeof tvSeasons = [];
+  let seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
+
+  if (mediaType === "tv" && userMedia && tvProgress.length > 0) {
+    const progressBySeason = new Map<number, Set<number>>();
+    for (const row of tvProgress) {
+      if (!progressBySeason.has(row.season_number)) {
+        progressBySeason.set(row.season_number, new Set());
+      }
+      progressBySeason.get(row.season_number)!.add(row.episode_number);
+    }
+
+    const maxWatchedSeason =
+      progressBySeason.size > 0
+        ? Math.max(...Array.from(progressBySeason.keys()))
+        : 0;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    newSeasons = tvSeasons.filter(
+      (s) =>
+        s.season_number > maxWatchedSeason &&
+        s.air_date !== null &&
+        s.air_date <= todayStr
+    );
+
+    seasonsWithNewEpisodes = tvSeasons.reduce<NewSeasonWithEpisodes[]>((acc, s) => {
+      const eps = progressBySeason.get(s.season_number);
+      if (!eps || eps.size === 0) return acc;
+      const newCount = s.episode_count - eps.size;
+      if (newCount > 0) acc.push({ season_number: s.season_number, newEpisodeCount: newCount });
+      return acc;
+    }, []);
+  }
+
   const backdropPath = tmdbData.backdrop_path;
   const posterPath = tmdbData.poster_path;
 
@@ -424,10 +462,21 @@ async function MediaDetailData({
           </div>
         </div>
 
-        {/* 7. Streaming providers */}
+        {/* 7. New season banner (TV only) */}
+        {mediaType === "tv" && mediaItem && (newSeasons.length > 0 || seasonsWithNewEpisodes.length > 0) && (
+          <NewSeasonBanner
+            newSeasons={newSeasons}
+            seasonsWithNewEpisodes={seasonsWithNewEpisodes}
+            showTitle={title}
+            tmdbId={tmdbData.id}
+            mediaId={mediaItem.id}
+          />
+        )}
+
+        {/* 8. Streaming providers */}
         <StreamingProviders providers={watchProviders} />
 
-        {/* 8. Cast */}
+        {/* 9. Cast */}
         {cast.length > 0 && (
           <div className="mt-8">
             <h2 className="mb-3 text-lg font-semibold text-foreground">
@@ -470,7 +519,7 @@ async function MediaDetailData({
           </div>
         )}
 
-        {/* 9. Seasons & Episodes (TV only) */}
+        {/* 10. Seasons & Episodes (TV only) */}
         {mediaType === "tv" && tvSeasons.length > 0 && mediaItem && (
           <SeasonAccordion
             tmdbId={tmdbData.id}
@@ -482,7 +531,7 @@ async function MediaDetailData({
           />
         )}
 
-        {/* 10. Collection (movies only) */}
+        {/* 11. Collection (movies only) */}
         {collection && (
           <CollectionSection
             collection={collection}
@@ -491,7 +540,7 @@ async function MediaDetailData({
           />
         )}
 
-        {/* 11. More Like This */}
+        {/* 12. More Like This */}
         <RecommendationsSection
           recommendations={recommendations}
           userLibraryMap={userLibraryMap}

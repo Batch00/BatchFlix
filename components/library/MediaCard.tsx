@@ -10,8 +10,8 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
   const watched = item.watchedEpisodes ?? 0;
   const total = m.total_episodes ?? 0;
-  const showProgress = status === "watching" && m.media_type === "tv" && watched > 0 && total > 0;
-  const pct = showProgress ? Math.min((watched / total) * 100, 100) : 0;
+  const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
+  const pct = total > 0 ? (watched / total) * 100 : 0;
 
   return (
     <Link

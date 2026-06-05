@@ -21,10 +21,22 @@ const VIEW_PREF_KEY = "batchflix_view_preference";
 const TALK_SHOW_PATTERN =
   /tonight show|late night|late show|jimmy|conan|ellen|colbert|kimmel|fallon|daily show|\bthe view\b|kelly|seth meyers/i;
 
+const EXCLUDED_SHOW_IDS = [1667]; // SNL
+
 function isTalkShow(credit: TMDBPersonCredit): boolean {
+  if (EXCLUDED_SHOW_IDS.includes(credit.id)) return true;
   if (credit.genre_ids?.includes(10767)) return true;
   const name = credit.title ?? credit.name ?? "";
   return TALK_SHOW_PATTERN.test(name);
+}
+
+function deduplicateCredits(credits: TMDBPersonCredit[]): TMDBPersonCredit[] {
+  const seen = new Map<string, TMDBPersonCredit>();
+  for (const credit of credits) {
+    const key = `${credit.id}-${credit.media_type}`;
+    if (!seen.has(key)) seen.set(key, credit);
+  }
+  return Array.from(seen.values());
 }
 
 const STATUS_PILL: Record<string, { bg: string; text: string; label: string }> = {
@@ -199,8 +211,8 @@ export function PersonCreditsClient({
     window.scrollTo({ top: 0, behavior: "instant" });
   }, []);
 
-  const filteredCast = castCredits.filter((c) => !isTalkShow(c));
-  const filteredDirecting = directingCredits.filter((c) => !isTalkShow(c));
+  const filteredCast = deduplicateCredits(castCredits.filter((c) => !isTalkShow(c)));
+  const filteredDirecting = deduplicateCredits(directingCredits.filter((c) => !isTalkShow(c)));
 
   const hasBoth = filteredCast.length > 0 && filteredDirecting.length > 0;
   const activeCredits =

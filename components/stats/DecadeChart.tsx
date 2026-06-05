@@ -52,14 +52,17 @@ export function DecadeChart({ data, allItems, onDrillDown }: Props) {
             tickLine={false}
           />
           <Tooltip
-            cursor={{ fill: "rgba(255,255,255,0.04)" }}
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
             contentStyle={{
-              background: "#111111",
-              border: "1px solid #1f1f1f",
+              backgroundColor: "#1f1f1f",
+              border: "1px solid #374151",
               borderRadius: "8px",
-              color: "#f9fafb",
-              fontSize: "12px",
+              color: "#fafafa",
+              fontSize: "13px",
+              padding: "8px 12px",
             }}
+            labelStyle={{ color: "#fafafa", fontWeight: 600, marginBottom: "4px" }}
+            itemStyle={{ color: "#a1a1aa" }}
             formatter={(value) => [value, "titles"]}
             labelFormatter={(label) => `${label}`}
           />

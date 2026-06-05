@@ -435,22 +435,22 @@ export function ListDetailContent({ list }: Props) {
         <div className="flex flex-col gap-1">
           {/* Breadcrumb: for sublists show parent → this; for top-level show ← Lists */}
           {isSublist && list.parent ? (
-            <div className="flex flex-wrap items-center gap-1 text-sm text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-sm text-muted-foreground">
               <Link
                 href="/lists"
-                className="transition-colors hover:text-foreground"
+                className="inline-flex items-center transition-colors hover:text-foreground"
               >
                 Lists
               </Link>
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
               <Link
                 href={`/lists/${list.parent.id}`}
-                className="max-w-[120px] truncate font-medium transition-colors hover:text-foreground"
+                className="inline-flex items-center font-medium transition-colors hover:text-foreground"
               >
                 {list.parent.name}
               </Link>
               <ChevronRight className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="font-medium text-foreground">
+              <span className="inline-flex items-center font-medium text-foreground">
                 {list.name}
               </span>
             </div>

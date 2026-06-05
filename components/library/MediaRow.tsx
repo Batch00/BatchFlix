@@ -173,7 +173,7 @@ export function MediaRow({ item, onRemoved }: Props) {
 
   const watched = item.watchedEpisodes ?? 0;
   const total = m.total_episodes ?? 0;
-  const showProgress = m.media_type === "tv" && watched > 0 && total > 0;
+  const showProgress = rowStatus === "watching" && m.media_type === "tv" && watched > 0 && total > 0;
   const pct = showProgress ? Math.min((watched / total) * 100, 100) : 0;
 
   return (
@@ -278,6 +278,11 @@ export function MediaRow({ item, onRemoved }: Props) {
             {m.media_type}
           </span>
         </div>
+        {showProgress && (
+          <div className="mt-1 h-[3px] w-full overflow-hidden rounded-full bg-secondary">
+            <div className="h-full rounded-full bg-[#2563EB]" style={{ width: `${pct}%` }} />
+          </div>
+        )}
       </Link>
 
       <div className="hidden items-center gap-3 md:flex">

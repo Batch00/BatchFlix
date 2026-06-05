@@ -8,6 +8,8 @@ import { Layers, Film, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { useListPicker } from "@/components/providers/ListPickerProvider";
+import { MediaTypeBadge } from "@/components/media/MediaTypeBadge";
+import { StatusBadge } from "@/components/media/StatusBadge";
 import type { TMDBCollection } from "@/lib/tmdb";
 
 type Props = {
@@ -97,23 +99,10 @@ export function CollectionSection({
                     </div>
                   )}
 
+                  <MediaTypeBadge mediaType="movie" />
+
                   {status ? (
-                    <div
-                      className={cn(
-                        "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
-                        status === "watched"
-                          ? "bg-blue-900/80 text-blue-200"
-                          : status === "watching"
-                          ? "bg-yellow-900/80 text-yellow-200"
-                          : "bg-zinc-800/80 text-zinc-300"
-                      )}
-                    >
-                      {status === "watched"
-                        ? "Watched"
-                        : status === "watching"
-                        ? "Watching"
-                        : "Watchlist"}
-                    </div>
+                    <StatusBadge status={status as "watched" | "watching" | "watchlist"} />
                   ) : (
                     !isCurrent && (
                       <button

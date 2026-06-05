@@ -192,6 +192,7 @@ export interface TMDBPersonCredit {
   character?: string;
   job?: string;
   vote_average: number;
+  genre_ids?: number[];
 }
 
 export interface TMDBCollectionPart {

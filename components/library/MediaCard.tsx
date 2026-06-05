@@ -1,36 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { MediaTypeBadge } from "@/components/media/MediaTypeBadge";
+import { StatusBadge } from "@/components/media/StatusBadge";
 import type { UserMediaRow } from "@/lib/queries/library";
-
-const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  watched: { bg: "bg-blue-900/80", text: "text-blue-200", label: "Watched" },
-  watching: { bg: "bg-yellow-900/80", text: "text-yellow-200", label: "Watching" },
-  watchlist: { bg: "bg-zinc-800/80", text: "text-zinc-300", label: "Watchlist" },
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const config = STATUS_BADGE[status] ?? STATUS_BADGE.watchlist;
-  return (
-    <div
-      className={cn(
-        "absolute bottom-0 left-0 right-0 rounded-b-lg py-0.5 text-center text-[10px] font-medium",
-        config.bg,
-        config.text
-      )}
-    >
-      {config.label}
-    </div>
-  );
-}
 
 export function MediaCard({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
   const watched = item.watchedEpisodes ?? 0;
   const total = m.total_episodes ?? 0;
-  const showProgress = m.media_type === "tv" && watched > 0 && total > 0;
+  const showProgress = status === "watching" && m.media_type === "tv" && watched > 0 && total > 0;
   const pct = showProgress ? Math.min((watched / total) * 100, 100) : 0;
 
   return (
@@ -57,14 +37,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
           </div>
         )}
 
-        <div
-          className={cn(
-            "absolute left-0 top-0 z-10 rounded-br-lg rounded-tl-lg px-1.5 py-0.5 text-[10px] font-medium text-white",
-            m.media_type === "movie" ? "bg-[#2563EB]" : "bg-[#7c3aed]"
-          )}
-        >
-          {m.media_type === "movie" ? "Movie" : "TV"}
-        </div>
+        <MediaTypeBadge mediaType={m.media_type} />
 
         <StatusBadge status={status} />
 

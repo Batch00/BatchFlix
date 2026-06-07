@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, CheckCheck } from "lucide-react";
+import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { StarRating } from "@/components/library/StarRating";
 import { toast } from "@/lib/toast";
@@ -38,6 +39,11 @@ function formatEpCode(season: number, episode: number) {
   return `S${String(season).padStart(2, "0")}E${String(episode).padStart(2, "0")}`;
 }
 
+function formatAirDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return format(new Date(+y, +m - 1, +d), "MMM d, yyyy");
+}
+
 export function SeasonAccordion({
   tmdbId,
   mediaId,
@@ -46,6 +52,8 @@ export function SeasonAccordion({
   userId,
   isShowWatched,
 }: Props) {
+  const todayStr = new Date().toISOString().slice(0, 10);
+
   const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
   const [episodeCache, setEpisodeCache] = useState<Record<number, TMDBEpisode[]>>({});
   const [loadingSeasons, setLoadingSeasons] = useState<Set<number>>(new Set());
@@ -203,6 +211,7 @@ export function SeasonAccordion({
           }).length;
           const total = season.episode_count;
           const pct = total > 0 ? (watchedCount / total) * 100 : 0;
+          const seasonIsUpcoming = !!season.air_date && season.air_date > todayStr;
 
           return (
             <div
@@ -225,6 +234,11 @@ export function SeasonAccordion({
                         {watchedCount} / {total} ep
                       </span>
                     </div>
+                    {season.air_date && (
+                      <p className="text-xs text-muted-foreground/60">
+                        {seasonIsUpcoming ? "Premieres" : "Premiered"} {formatAirDate(season.air_date)}
+                      </p>
+                    )}
                     <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-secondary">
                       <div
                         className="h-full rounded-full bg-[#2563EB] transition-all duration-300"
@@ -267,8 +281,8 @@ export function SeasonAccordion({
                       {episodes.map((ep) => {
                         const key = progressKey(season.season_number, ep.episode_number);
                         const epProgress = progress[key];
-                        // If show is marked watched and no explicit episode progress exists, treat as watched
                         const isWatched = epProgress ? epProgress.watched : isShowWatched;
+                        const isUpcoming = !!ep.air_date && ep.air_date > todayStr;
 
                         return (
                           <div
@@ -278,7 +292,7 @@ export function SeasonAccordion({
                             <input
                               type="checkbox"
                               checked={isWatched}
-                              disabled={!userId}
+                              disabled={!userId || isUpcoming}
                               onChange={(e) =>
                                 void handleToggleEpisode(
                                   season.season_number,
@@ -286,7 +300,10 @@ export function SeasonAccordion({
                                   e.target.checked
                                 )
                               }
-                              className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border accent-[#2563EB]"
+                              className={cn(
+                                "mt-0.5 h-4 w-4 flex-shrink-0 rounded border-border accent-[#2563EB]",
+                                isUpcoming && "cursor-not-allowed opacity-30"
+                              )}
                             />
                             <div className="min-w-0 flex-1">
                               <div className="flex items-start justify-between gap-2">
@@ -294,11 +311,11 @@ export function SeasonAccordion({
                                   <span className="font-mono text-xs text-muted-foreground">
                                     {formatEpCode(season.season_number, ep.episode_number)}
                                   </span>
-                                  <span className={cn("ml-2 text-sm", isWatched ? "text-foreground" : "text-muted-foreground")}>
+                                  <span className={cn("ml-2 text-sm", isWatched && !isUpcoming ? "text-foreground" : "text-muted-foreground")}>
                                     {ep.name}
                                   </span>
                                 </div>
-                                {isWatched && (
+                                {isWatched && !isUpcoming && (
                                   <div className="flex-shrink-0">
                                     <StarRating
                                       interactive
@@ -315,11 +332,20 @@ export function SeasonAccordion({
                                   </div>
                                 )}
                               </div>
-                              <div className="mt-0.5 flex items-center gap-2">
-                                {ep.air_date && (
-                                  <span className="text-xs text-muted-foreground/60">
-                                    {ep.air_date.slice(0, 4)}
-                                  </span>
+                              <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                                {ep.air_date ? (
+                                  <>
+                                    <span className="text-xs text-muted-foreground/60">
+                                      {formatAirDate(ep.air_date)}
+                                    </span>
+                                    {isUpcoming && (
+                                      <span className="rounded px-1 py-0.5 text-[10px] bg-yellow-900/60 text-yellow-300">
+                                        Upcoming
+                                      </span>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span className="text-xs text-muted-foreground/60">TBA</span>
                                 )}
                                 {ep.runtime && ep.runtime > 0 && (
                                   <span className="text-xs text-muted-foreground/60">

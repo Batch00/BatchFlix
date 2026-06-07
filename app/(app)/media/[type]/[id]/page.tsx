@@ -257,6 +257,7 @@ async function MediaDetailData({
   type NewSeasonWithEpisodes = { season_number: number; newEpisodeCount: number };
   let newSeasons: typeof tvSeasons = [];
   let seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
+  let seasonsPreloadedUnwatched: typeof tvSeasons = [];
 
   console.log("[NewSeason] userMedia status:", userMedia?.status, "| tvProgress rows:", tvProgress.length);
 
@@ -266,7 +267,9 @@ async function MediaDetailData({
       return acc;
     }, {});
 
-    const todayStr = new Date().toISOString().slice(0, 10);
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + 30);
+    const cutoff = cutoffDate.toISOString().slice(0, 10);
 
     const maxWatchedSeason =
       Object.keys(progressBySeason).length > 0
@@ -274,17 +277,18 @@ async function MediaDetailData({
         : 0;
 
     console.log("[NewSeason] maxWatchedSeason:", maxWatchedSeason);
+    console.log("[NewSeason] cutoff date:", cutoff);
     console.log("[NewSeason] progressBySeason:", progressBySeason);
     console.log("[NewSeason] all seasons:", tvSeasons.map((s) => ({ n: s.season_number, aired: s.air_date, epCount: s.episode_count })));
 
     newSeasons = tvSeasons.filter((s) => {
-      if (!s.air_date || s.air_date > todayStr) return false;
+      if (!s.air_date || s.air_date > cutoff) return false;
       return (progressBySeason[s.season_number] ?? 0) === 0;
     });
 
     seasonsWithNewEpisodes = tvSeasons
       .filter((s) => {
-        if (!s.air_date || s.air_date > todayStr) return false;
+        if (!s.air_date || s.air_date > cutoff) return false;
         const tracked = progressBySeason[s.season_number] ?? 0;
         return tracked > 0 && s.episode_count > tracked;
       })
@@ -293,8 +297,19 @@ async function MediaDetailData({
         newEpisodeCount: s.episode_count - (progressBySeason[s.season_number] ?? 0),
       }));
 
+    seasonsPreloadedUnwatched = tvSeasons.filter((s) => {
+      if (!s.air_date || s.air_date > cutoff) return false;
+      const tracked = progressBySeason[s.season_number] ?? 0;
+      if (tracked === 0) return false;
+      const watchedInSeason = tvProgress.filter(
+        (r) => r.season_number === s.season_number && r.watched === true
+      ).length;
+      return watchedInSeason === 0;
+    });
+
     console.log("[NewSeason] newSeasons found:", newSeasons.map((s) => s.season_number));
     console.log("[NewSeason] seasonsWithNewEpisodes:", seasonsWithNewEpisodes);
+    console.log("[NewSeason] seasonsPreloadedUnwatched:", seasonsPreloadedUnwatched.map((s) => s.season_number));
   }
 
   const backdropPath = tmdbData.backdrop_path;
@@ -470,10 +485,11 @@ async function MediaDetailData({
         </div>
 
         {/* 7. New season banner (TV only, watched shows only) */}
-        {mediaType === "tv" && mediaItem && userMedia?.status === "watched" && (newSeasons.length > 0 || seasonsWithNewEpisodes.length > 0) && (
+        {mediaType === "tv" && mediaItem && userMedia?.status === "watched" && (newSeasons.length > 0 || seasonsWithNewEpisodes.length > 0 || seasonsPreloadedUnwatched.length > 0) && (
           <NewSeasonBanner
             newSeasons={newSeasons}
             seasonsWithNewEpisodes={seasonsWithNewEpisodes}
+            seasonsPreloadedUnwatched={seasonsPreloadedUnwatched}
             showTitle={title}
             tmdbId={tmdbData.id}
             mediaId={mediaItem.id}

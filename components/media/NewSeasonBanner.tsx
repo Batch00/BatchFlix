@@ -14,6 +14,7 @@ type SeasonWithNewEpisodes = {
 type Props = {
   newSeasons: TMDBSeason[];
   seasonsWithNewEpisodes: SeasonWithNewEpisodes[];
+  seasonsPreloadedUnwatched: TMDBSeason[];
   showTitle: string;
   tmdbId: number;
   mediaId: string;
@@ -32,16 +33,20 @@ function formatSeasonList(seasons: TMDBSeason[]): string {
 export function NewSeasonBanner({
   newSeasons,
   seasonsWithNewEpisodes,
+  seasonsPreloadedUnwatched,
   tmdbId,
   mediaId,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  if (newSeasons.length === 0 && seasonsWithNewEpisodes.length === 0) return null;
+  if (newSeasons.length === 0 && seasonsWithNewEpisodes.length === 0 && seasonsPreloadedUnwatched.length === 0) return null;
+
+  // Combine fully-new and preloaded-unwatched seasons for display and API call
+  const availableSeasons = [...newSeasons, ...seasonsPreloadedUnwatched];
 
   const allSeasonNumbers = [
-    ...newSeasons.map((s) => s.season_number),
+    ...availableSeasons.map((s) => s.season_number),
     ...seasonsWithNewEpisodes.map((s) => s.season_number),
   ];
 
@@ -54,7 +59,7 @@ export function NewSeasonBanner({
         body: JSON.stringify({ mediaId, tmdbId, seasons: allSeasonNumbers }),
       });
       if (!res.ok) throw new Error();
-      const firstNew = newSeasons[0] ?? seasonsWithNewEpisodes[0];
+      const firstNew = availableSeasons[0] ?? seasonsWithNewEpisodes[0];
       toast.success(
         `Ready to continue -- Season ${firstNew.season_number} added to your progress`
       );
@@ -78,10 +83,10 @@ export function NewSeasonBanner({
             New content available
           </p>
           <div className="mt-1 flex flex-col gap-0.5">
-            {newSeasons.length > 0 && (
+            {availableSeasons.length > 0 && (
               <p className="text-sm text-muted-foreground">
-                {formatSeasonList(newSeasons)}{" "}
-                {newSeasons.length === 1 ? "is" : "are"} now available
+                {formatSeasonList(availableSeasons)}{" "}
+                {availableSeasons.length === 1 ? "is" : "are"} now available
               </p>
             )}
             {seasonsWithNewEpisodes.map((s) => (

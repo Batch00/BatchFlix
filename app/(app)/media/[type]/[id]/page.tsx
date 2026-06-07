@@ -261,38 +261,37 @@ async function MediaDetailData({
   console.log("[NewSeason] userMedia status:", userMedia?.status, "| tvProgress rows:", tvProgress.length);
 
   if (mediaType === "tv" && userMedia?.status === "watched" && tvProgress.length > 0) {
-    const progressBySeason = new Map<number, Set<number>>();
-    for (const row of tvProgress) {
-      if (!progressBySeason.has(row.season_number)) {
-        progressBySeason.set(row.season_number, new Set());
-      }
-      progressBySeason.get(row.season_number)!.add(row.episode_number);
-    }
-
-    const maxWatchedSeason =
-      progressBySeason.size > 0
-        ? Math.max(...Array.from(progressBySeason.keys()))
-        : 0;
+    const progressBySeason = tvProgress.reduce<Record<number, number>>((acc, row) => {
+      acc[row.season_number] = (acc[row.season_number] ?? 0) + 1;
+      return acc;
+    }, {});
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
+    const maxWatchedSeason =
+      Object.keys(progressBySeason).length > 0
+        ? Math.max(...Object.keys(progressBySeason).map(Number))
+        : 0;
+
     console.log("[NewSeason] maxWatchedSeason:", maxWatchedSeason);
+    console.log("[NewSeason] progressBySeason:", progressBySeason);
     console.log("[NewSeason] all seasons:", tvSeasons.map((s) => ({ n: s.season_number, aired: s.air_date, epCount: s.episode_count })));
 
-    newSeasons = tvSeasons.filter(
-      (s) =>
-        s.season_number > maxWatchedSeason &&
-        s.air_date != null &&
-        s.air_date <= todayStr
-    );
+    newSeasons = tvSeasons.filter((s) => {
+      if (!s.air_date || s.air_date > todayStr) return false;
+      return (progressBySeason[s.season_number] ?? 0) === 0;
+    });
 
-    seasonsWithNewEpisodes = tvSeasons.reduce<NewSeasonWithEpisodes[]>((acc, s) => {
-      const eps = progressBySeason.get(s.season_number);
-      if (!eps || eps.size === 0) return acc;
-      const newCount = s.episode_count - eps.size;
-      if (newCount > 0) acc.push({ season_number: s.season_number, newEpisodeCount: newCount });
-      return acc;
-    }, []);
+    seasonsWithNewEpisodes = tvSeasons
+      .filter((s) => {
+        if (!s.air_date || s.air_date > todayStr) return false;
+        const tracked = progressBySeason[s.season_number] ?? 0;
+        return tracked > 0 && s.episode_count > tracked;
+      })
+      .map((s) => ({
+        season_number: s.season_number,
+        newEpisodeCount: s.episode_count - (progressBySeason[s.season_number] ?? 0),
+      }));
 
     console.log("[NewSeason] newSeasons found:", newSeasons.map((s) => s.season_number));
     console.log("[NewSeason] seasonsWithNewEpisodes:", seasonsWithNewEpisodes);

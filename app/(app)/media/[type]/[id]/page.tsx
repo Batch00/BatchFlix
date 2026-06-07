@@ -253,10 +253,12 @@ async function MediaDetailData({
     }
   }
 
-  // New season detection (TV only, when user has the show in library)
+  // New season detection (TV only, when user has the show as watched)
   type NewSeasonWithEpisodes = { season_number: number; newEpisodeCount: number };
   let newSeasons: typeof tvSeasons = [];
   let seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
+
+  console.log("[NewSeason] userMedia status:", userMedia?.status, "| tvProgress rows:", tvProgress.length);
 
   if (mediaType === "tv" && userMedia?.status === "watched" && tvProgress.length > 0) {
     const progressBySeason = new Map<number, Set<number>>();
@@ -274,10 +276,13 @@ async function MediaDetailData({
 
     const todayStr = new Date().toISOString().slice(0, 10);
 
+    console.log("[NewSeason] maxWatchedSeason:", maxWatchedSeason);
+    console.log("[NewSeason] all seasons:", tvSeasons.map((s) => ({ n: s.season_number, aired: s.air_date, epCount: s.episode_count })));
+
     newSeasons = tvSeasons.filter(
       (s) =>
         s.season_number > maxWatchedSeason &&
-        s.air_date !== null &&
+        s.air_date != null &&
         s.air_date <= todayStr
     );
 
@@ -288,6 +293,9 @@ async function MediaDetailData({
       if (newCount > 0) acc.push({ season_number: s.season_number, newEpisodeCount: newCount });
       return acc;
     }, []);
+
+    console.log("[NewSeason] newSeasons found:", newSeasons.map((s) => s.season_number));
+    console.log("[NewSeason] seasonsWithNewEpisodes:", seasonsWithNewEpisodes);
   }
 
   const backdropPath = tmdbData.backdrop_path;

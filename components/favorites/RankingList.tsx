@@ -25,6 +25,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { StarRating } from "@/components/library/StarRating";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { toast } from "@/lib/toast";
+import { handleDemoResponse } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 import type { ListItemRow } from "@/lib/queries/lists";
 
@@ -180,13 +181,17 @@ export function RankingList({ initialItems, listId, mediaType, listName }: Props
       setItems(newItems);
 
       try {
-        await fetch(`/api/lists/${listId}/reorder`, {
+        const res = await fetch(`/api/lists/${listId}/reorder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             items: newItems.map((item, index) => ({ id: item.id, position: index })),
           }),
         });
+        if (handleDemoResponse(res)) {
+          setItems(items); // revert optimistic update
+          return;
+        }
       } catch {
         toast.error("Failed to save order");
       }
@@ -202,24 +207,24 @@ export function RankingList({ initialItems, listId, mediaType, listName }: Props
       setItems((cur) => cur.filter((i) => i.id !== item.id));
 
       try {
-        const promises: Promise<Response>[] = [];
-        if (userMediaId) {
-          promises.push(
-            fetch("/api/library/update", {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userMediaId, isFavorite: false }),
-            })
-          );
-        }
-        promises.push(
+        const responses = await Promise.all([
+          userMediaId
+            ? fetch("/api/library/update", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userMediaId, isFavorite: false }),
+              })
+            : Promise.resolve(new Response(null, { status: 200 })),
           fetch(`/api/lists/${listId}/items`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ mediaId }),
-          })
-        );
-        await Promise.all(promises);
+          }),
+        ]);
+        if (responses.some((r) => handleDemoResponse(r))) {
+          setItems(prev);
+          return;
+        }
 
         toast("Removed from favorites", {
           action: {

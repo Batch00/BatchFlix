@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 
 const schema = z.object({
   mediaId: z.string().uuid(),
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isDemoUser(user.id)) return demoGuardResponse();
 
   let body: unknown;
   try {

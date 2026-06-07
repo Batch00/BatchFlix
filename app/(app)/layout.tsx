@@ -1,7 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/nav/TopNav";
+import { DemoBanner } from "@/components/ui/DemoBanner";
 import { ListPickerProvider } from "@/components/providers/ListPickerProvider";
+import { isDemoUser } from "@/lib/demo";
 
 const FAVORITE_LISTS = [
   { name: "Favorite Movies", description: "Movies you love", color: "#dc2626" },
@@ -46,9 +48,12 @@ export default async function AppLayout({
     await ensureFavoriteLists(user.id);
   }
 
+  const isDemo = isDemoUser(user?.id);
+
   return (
     <ListPickerProvider>
       <TopNav userEmail={user?.email ?? null} />
+      {isDemo && <DemoBanner />}
       <main className="min-h-[calc(100vh-3.5rem)] pb-24 pt-4 md:pb-0">{children}</main>
     </ListPickerProvider>
   );

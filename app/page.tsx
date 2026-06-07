@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clapperboard } from "lucide-react";
+import { Clapperboard, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,8 @@ export default function LandingPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const [demoError, setDemoError] = useState("");
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
@@ -29,6 +31,22 @@ export default function LandingPage() {
       return;
     }
 
+    router.push("/library");
+  }
+
+  async function handleDemo() {
+    setDemoError("");
+    setDemoLoading(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithPassword({
+      email: "demo@batchflix.com",
+      password: "BatchFlixDemo2026!",
+    });
+    if (error) {
+      setDemoError("Demo unavailable. Try again.");
+      setDemoLoading(false);
+      return;
+    }
     router.push("/library");
   }
 
@@ -93,13 +111,18 @@ export default function LandingPage() {
           type="button"
           variant="outline"
           className="w-full"
-          onClick={() => {
-            // TODO: wire to demo auth once implemented
-            console.log("demo mode");
-          }}
+          disabled={demoLoading}
+          onClick={() => void handleDemo()}
         >
-          Try a demo
+          {demoLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            "Try a demo"
+          )}
         </Button>
+        {demoError && (
+          <p className="text-center text-sm text-destructive">{demoError}</p>
+        )}
       </div>
 
       <p className="mt-6 text-center text-xs text-muted-foreground">

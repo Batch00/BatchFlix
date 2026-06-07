@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Layers, Film, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
+import { handleDemoResponse } from "@/lib/demo";
 import { useListPicker } from "@/components/providers/ListPickerProvider";
 import { MediaTypeBadge } from "@/components/media/MediaTypeBadge";
 import { StatusBadge } from "@/components/media/StatusBadge";
@@ -40,6 +41,7 @@ export function CollectionSection({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tmdbId: id, mediaType: "movie", status: "watchlist" }),
       });
+      if (handleDemoResponse(res)) return;
       if (!res.ok) throw new Error();
       const result = await res.json() as { id: string; media_id: string };
       setLibraryMap((prev) => ({ ...prev, [`movie:${id}`]: "watchlist" }));

@@ -6,6 +6,7 @@ import { ListPlus, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { toast } from "@/lib/toast";
+import { handleDemoResponse } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 import type { ListWithCount } from "@/lib/queries/lists";
 
@@ -85,6 +86,7 @@ export function AddToListButton({ mediaId }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mediaId }),
         });
+        if (handleDemoResponse(res)) return;
         if (!res.ok) throw new Error();
         setLists((prev) => updateListById(prev, list.id, false));
         toast.success(`Removed from ${list.name}`);
@@ -95,6 +97,7 @@ export function AddToListButton({ mediaId }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mediaId }),
         });
+        if (handleDemoResponse(res)) return;
         if (res.status === 409) {
           setLists((prev) => updateListById(prev, list.id, true));
           return;

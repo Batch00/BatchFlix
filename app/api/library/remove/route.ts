@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 
 const schema = z.object({
   userMediaId: z.string().uuid(),
@@ -15,6 +16,7 @@ export async function DELETE(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isDemoUser(user.id)) return demoGuardResponse();
 
   let body: unknown;
   try {

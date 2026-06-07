@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
+import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 
 type Params = Promise<{ id: string }>;
 
@@ -74,6 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isDemoUser(user.id)) return demoGuardResponse();
 
   const { data: list } = await supabase
     .schema("batchflix")
@@ -154,6 +156,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Params }) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isDemoUser(user.id)) return demoGuardResponse();
 
   const { data: list } = await supabase
     .schema("batchflix")

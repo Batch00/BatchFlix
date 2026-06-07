@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { StarRating } from "./StarRating";
 import { toast } from "@/lib/toast";
+import { handleDemoResponse } from "@/lib/demo";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
 
@@ -112,6 +113,10 @@ export function AddToLibrary({
           ...(newStatus !== "watched" ? { rating: null } : {}),
         }),
       });
+      if (handleDemoResponse(res)) {
+        setActiveStatus(prevStatus);
+        return;
+      }
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
@@ -144,6 +149,7 @@ export function AddToLibrary({
             : {}),
         }),
       });
+      if (handleDemoResponse(res)) return;
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
@@ -176,6 +182,7 @@ export function AddToLibrary({
           notes: addNotes || undefined,
         }),
       });
+      if (handleDemoResponse(res)) return;
       if (!res.ok) throw new Error("Add failed");
       const created = await res.json();
       setUserMedia({ ...created, media_items: null } as UserMediaRow);
@@ -235,6 +242,7 @@ export function AddToLibrary({
       body: JSON.stringify({ userMediaId: userMedia.id }),
     });
 
+    if (handleDemoResponse(res)) return;
     if (!res.ok) {
       toast.error("Could not remove from library");
       return;
@@ -291,6 +299,7 @@ export function AddToLibrary({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userMediaId, isFavorite: newFav }),
       });
+      if (handleDemoResponse(res)) return;
       if (!res.ok) throw new Error();
       setUserMedia((prev) =>
         prev ? { ...prev, is_favorite: newFav } : prev

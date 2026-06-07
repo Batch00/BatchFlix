@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
+import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 
 const schema = z.object({
   tmdbId: z.number().int().positive(),
@@ -20,6 +21,7 @@ export async function POST(request: NextRequest) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (isDemoUser(user.id)) return demoGuardResponse();
 
   let body: unknown;
   try {

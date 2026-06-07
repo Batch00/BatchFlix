@@ -1,5 +1,6 @@
 "use client";
 
+import { useId } from "react";
 import { cn } from "@/lib/utils";
 
 const STAR_PATH =
@@ -7,16 +8,23 @@ const STAR_PATH =
 
 type StarFill = "full" | "half" | "empty";
 
+// starPosition is 1-5. rating is the DB value (1-10, half-star increments).
+export function getStarFill(starPosition: number, rating: number): StarFill {
+  const displayRating = rating / 2;
+  if (displayRating >= starPosition) return "full";
+  if (displayRating >= starPosition - 0.5) return "half";
+  return "empty";
+}
+
 function Star({
   fill,
-  index,
+  clipId,
   size = 20,
 }: {
   fill: StarFill;
-  index: number;
+  clipId: string;
   size?: number;
 }) {
-  const clipId = `star-half-${index}`;
   return (
     <svg
       width={size}
@@ -51,14 +59,6 @@ function Star({
   );
 }
 
-function getStarFill(index: number, rating: number): StarFill {
-  const fullThreshold = (index + 1) * 2;
-  const halfThreshold = index * 2 + 1;
-  if (rating >= fullThreshold) return "full";
-  if (rating >= halfThreshold) return "half";
-  return "empty";
-}
-
 type StarRatingProps =
   | {
       interactive: true;
@@ -79,17 +79,20 @@ export function StarRating({
   onChange,
   size = 20,
 }: StarRatingProps) {
+  const baseId = useId();
   const displayValue = rating / 2;
 
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex items-center">
         {Array.from({ length: 5 }, (_, i) => {
-          const fill = getStarFill(i, rating);
+          const starPosition = i + 1;
+          const fill = getStarFill(starPosition, rating);
+          const clipId = `${baseId}-star-${i}`;
           if (interactive && onChange) {
             return (
               <div key={i} className="relative">
-                <Star fill={fill} index={i} size={size} />
+                <Star fill={fill} clipId={clipId} size={size} />
                 <button
                   type="button"
                   className={cn(
@@ -111,7 +114,7 @@ export function StarRating({
               </div>
             );
           }
-          return <Star key={i} fill={fill} index={i} size={size} />;
+          return <Star key={i} fill={fill} clipId={clipId} size={size} />;
         })}
       </div>
       {rating > 0 && (

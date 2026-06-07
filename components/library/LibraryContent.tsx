@@ -93,7 +93,13 @@ function sortItems(rows: UserMediaRow[], sort: Sort): UserMediaRow[] {
           new Date(a.watched_date ?? "1900-01-01").getTime()
       );
     case "rating":
-      return copy.sort((a, b) => (b.rating ?? -1) - (a.rating ?? -1));
+      return copy.sort((a, b) => {
+        const ratingDiff = (b.rating ?? -1) - (a.rating ?? -1);
+        if (ratingDiff !== 0) return ratingDiff;
+        const dateA = a.watched_date ? new Date(a.watched_date).getTime() : 0;
+        const dateB = b.watched_date ? new Date(b.watched_date).getTime() : 0;
+        return dateB - dateA;
+      });
     case "title":
       return copy.sort((a, b) =>
         a.media_items.title.localeCompare(b.media_items.title)

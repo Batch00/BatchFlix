@@ -175,6 +175,7 @@ export function MediaRow({ item, onRemoved }: Props) {
   const total = m.total_episodes ?? 0;
   const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
   const pct = total > 0 ? (watched / total) * 100 : 0;
+  const hasNewContent = m.media_type === "tv" && rowStatus === "watched" && watched > 0 && total > watched;
 
   return (
     <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80 md:items-center">
@@ -251,6 +252,11 @@ export function MediaRow({ item, onRemoved }: Props) {
           >
             {STATUS_LABELS[rowStatus]}
           </span>
+          {hasNewContent && (
+            <span className="rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
+              New Season
+            </span>
+          )}
         </div>
 
         {(rowRating > 0 || rowDate) && (
@@ -271,7 +277,14 @@ export function MediaRow({ item, onRemoved }: Props) {
 
       {/* Desktop single-row content */}
       <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="hidden min-w-0 flex-1 md:block">
-        <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
+          {hasNewContent && (
+            <span className="flex-shrink-0 rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
+              New Season
+            </span>
+          )}
+        </div>
         <div className="mt-0.5 flex items-center gap-2">
           {year && <span className="text-xs text-muted-foreground">{year}</span>}
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">

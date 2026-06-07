@@ -12,6 +12,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
   const total = m.total_episodes ?? 0;
   const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
   const pct = total > 0 ? (watched / total) * 100 : 0;
+  const hasNewContent = m.media_type === "tv" && status === "watched" && watched > 0 && total > watched;
 
   return (
     <Link
@@ -38,6 +39,12 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
         )}
 
         <MediaTypeBadge mediaType={m.media_type} />
+
+        {hasNewContent && (
+          <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500 px-1.5 py-0.5 text-[9px] font-bold text-black">
+            NEW
+          </div>
+        )}
 
         <StatusBadge status={status} />
 

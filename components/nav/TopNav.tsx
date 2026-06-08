@@ -13,6 +13,7 @@ import {
   House,
   LayoutList,
   Compass,
+  Sparkles,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -168,6 +169,12 @@ export function TopNav({ userEmail }: Props) {
                   <Link href="/lists" className="flex items-center gap-2">
                     <List className="h-4 w-4" />
                     Lists
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/year-in-review/2026" className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    Year in Review
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

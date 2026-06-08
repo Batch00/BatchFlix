@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Share2, Copy, Loader2, Star, Clapperboard } from "lucide-react";
+import { Download, Loader2, Star, Clapperboard } from "lucide-react";
 import { toast } from "sonner";
 import type { YearInReview } from "@/lib/queries/year-in-review";
 import type { StatsItem } from "@/lib/queries/stats";
@@ -16,14 +16,16 @@ function PosterThumbnail({
   item,
   width,
   height,
+  forcePlaceholder,
 }: {
   item: StatsItem;
   width: number;
   height: number;
+  forcePlaceholder?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
 
-  if (!item.poster_path || imgError) {
+  if (!item.poster_path || imgError || forcePlaceholder) {
     return (
       <div
         className="flex shrink-0 items-center justify-center rounded-md bg-[#1f1f1f] text-sm font-bold text-muted-foreground"
@@ -63,22 +65,22 @@ export function YearInReviewClient({ data }: Props) {
       const canvas = await html2canvas(card, {
         backgroundColor: "#111111",
         scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
+        useCORS: false,
+        allowTaint: false,
+        foreignObjectRendering: false,
+        logging: true,
+        imageTimeout: 15000,
       });
       const link = document.createElement("a");
       link.download = `batchflix-${data.year}-in-review.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
+    } catch (err) {
+      console.error("html2canvas failed:", err);
+      toast.error("Could not generate image. Try again.");
     } finally {
       setIsCapturing(false);
     }
-  };
-
-  const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied");
   };
 
   const maxMonthCount = Math.max(...data.monthlyBreakdown.map((m) => m.count), 1);
@@ -89,16 +91,8 @@ export function YearInReviewClient({ data }: Props) {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4 py-8">
-      {/* Action buttons */}
-      <div className="mx-auto mb-6 flex max-w-2xl items-center justify-end gap-3">
-        <button
-          type="button"
-          onClick={handleCopyLink}
-          className="flex items-center gap-2 rounded-lg border border-[#1f1f1f] px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/60 hover:text-white"
-        >
-          <Copy className="h-4 w-4" />
-          Copy link
-        </button>
+      {/* Action button */}
+      <div className="mx-auto mb-6 flex max-w-2xl items-center justify-end">
         <button
           type="button"
           onClick={handleShare}
@@ -112,8 +106,8 @@ export function YearInReviewClient({ data }: Props) {
             </>
           ) : (
             <>
-              <Share2 className="h-4 w-4" />
-              Share
+              <Download className="h-4 w-4" />
+              Download as Image
             </>
           )}
         </button>
@@ -240,7 +234,12 @@ export function YearInReviewClient({ data }: Props) {
                   key={`${item.tmdb_id}-${item.media_type}`}
                   className="flex flex-col items-center gap-1"
                 >
-                  <PosterThumbnail item={item} width={60} height={90} />
+                  <PosterThumbnail
+                    item={item}
+                    width={60}
+                    height={90}
+                    forcePlaceholder={isCapturing}
+                  />
                   <span className="text-xs text-[#2563EB]">
                     {item.rating !== null
                       ? `${(item.rating / 2).toFixed(1)}★`
@@ -315,7 +314,12 @@ export function YearInReviewClient({ data }: Props) {
                   First Watch of {data.year}
                 </div>
                 <div className="flex items-center gap-3">
-                  <PosterThumbnail item={data.firstWatch} width={40} height={60} />
+                  <PosterThumbnail
+                    item={data.firstWatch}
+                    width={40}
+                    height={60}
+                    forcePlaceholder={isCapturing}
+                  />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-white">
                       {data.firstWatch.title}
@@ -340,7 +344,12 @@ export function YearInReviewClient({ data }: Props) {
                   Last Watch of {data.year}
                 </div>
                 <div className="flex items-center gap-3">
-                  <PosterThumbnail item={data.lastWatch} width={40} height={60} />
+                  <PosterThumbnail
+                    item={data.lastWatch}
+                    width={40}
+                    height={60}
+                    forcePlaceholder={isCapturing}
+                  />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-white">
                       {data.lastWatch.title}

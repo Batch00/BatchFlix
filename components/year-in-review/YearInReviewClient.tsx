@@ -16,16 +16,14 @@ function PosterThumbnail({
   item,
   width,
   height,
-  forcePlaceholder,
 }: {
   item: StatsItem;
   width: number;
   height: number;
-  forcePlaceholder?: boolean;
 }) {
   const [imgError, setImgError] = useState(false);
 
-  if (!item.poster_path || imgError || forcePlaceholder) {
+  if (!item.poster_path || imgError) {
     return (
       <div
         className="flex shrink-0 items-center justify-center rounded-md bg-[#1f1f1f] text-sm font-bold text-muted-foreground"
@@ -43,7 +41,6 @@ function PosterThumbnail({
       width={width}
       height={height}
       className="shrink-0 rounded-md object-cover"
-      crossOrigin="anonymous"
       onError={() => setImgError(true)}
     />
   );
@@ -57,26 +54,20 @@ export function YearInReviewClient({ data }: Props) {
   const [isCapturing, setIsCapturing] = useState(false);
 
   const handleShare = async () => {
-    const card = document.querySelector(".year-in-review-card") as HTMLElement;
-    if (!card) return;
     setIsCapturing(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
-      const canvas = await html2canvas(card, {
-        backgroundColor: "#111111",
-        scale: 2,
-        useCORS: false,
-        allowTaint: false,
-        foreignObjectRendering: false,
-        logging: true,
-        imageTimeout: 15000,
-      });
+      const response = await fetch(`/year-in-review/${data.year}/download`);
+      if (!response.ok) throw new Error("Failed to generate image");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
+      link.href = url;
       link.download = `batchflix-${data.year}-in-review.png`;
-      link.href = canvas.toDataURL("image/png");
       link.click();
+      URL.revokeObjectURL(url);
+      toast.success("Image downloaded!");
     } catch (err) {
-      console.error("html2canvas failed:", err);
+      console.error(err);
       toast.error("Could not generate image. Try again.");
     } finally {
       setIsCapturing(false);
@@ -113,7 +104,7 @@ export function YearInReviewClient({ data }: Props) {
         </button>
       </div>
 
-      {/* Main card -- captured by html2canvas */}
+      {/* Main card */}
       <div className="year-in-review-card relative mx-auto max-w-2xl rounded-2xl border border-[#1f1f1f] bg-[#111111] p-6 md:p-8">
         {/* Header */}
         <div className="mb-8 text-center">
@@ -234,12 +225,7 @@ export function YearInReviewClient({ data }: Props) {
                   key={`${item.tmdb_id}-${item.media_type}`}
                   className="flex flex-col items-center gap-1"
                 >
-                  <PosterThumbnail
-                    item={item}
-                    width={60}
-                    height={90}
-                    forcePlaceholder={isCapturing}
-                  />
+                  <PosterThumbnail item={item} width={60} height={90} />
                   <span className="text-xs text-[#2563EB]">
                     {item.rating !== null
                       ? `${(item.rating / 2).toFixed(1)}★`
@@ -314,12 +300,7 @@ export function YearInReviewClient({ data }: Props) {
                   First Watch of {data.year}
                 </div>
                 <div className="flex items-center gap-3">
-                  <PosterThumbnail
-                    item={data.firstWatch}
-                    width={40}
-                    height={60}
-                    forcePlaceholder={isCapturing}
-                  />
+                  <PosterThumbnail item={data.firstWatch} width={40} height={60} />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-white">
                       {data.firstWatch.title}
@@ -344,12 +325,7 @@ export function YearInReviewClient({ data }: Props) {
                   Last Watch of {data.year}
                 </div>
                 <div className="flex items-center gap-3">
-                  <PosterThumbnail
-                    item={data.lastWatch}
-                    width={40}
-                    height={60}
-                    forcePlaceholder={isCapturing}
-                  />
+                  <PosterThumbnail item={data.lastWatch} width={40} height={60} />
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium text-white">
                       {data.lastWatch.title}

@@ -246,7 +246,7 @@ export function YearInReviewClient({ data }: Props) {
                       ? `${(item.rating / 2).toFixed(1)}★`
                       : ""}
                   </span>
-                  <span className="max-w-[60px] truncate text-[10px] text-muted-foreground">
+                  <span className="w-full break-words text-center text-[10px] leading-tight line-clamp-2 text-muted-foreground">
                     {item.title}
                   </span>
                 </div>

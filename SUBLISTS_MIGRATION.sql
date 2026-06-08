@@ -24,7 +24,7 @@ BEGIN
   AND media_id IN(SELECT id FROM batchflix.media_items WHERE title ILIKE 'Terminator%' OR title='Terminator: Dark Fate');
 
   -- Jurassic Park
-  INSERT INTO batchflix.lists (user_id,name,color,is_pinned,parent_list_id,rules)
+INSERT INTO batchflix.lists (user_id,name,color,is_pinned,parent_list_id,rules)
   VALUES ('1ca08f60-c0eb-4fae-8297-1a2c73fb9cfc','Jurassic Park','#2563EB',false,movie_series_id,'[]')
   RETURNING id INTO new_list_id;
   INSERT INTO batchflix.list_items(list_id,media_id,position)

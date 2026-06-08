@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 import { getYearInReview } from "@/lib/queries/year-in-review";
 
-const APP_URL =
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+function requestBaseUrl(request: NextRequest): string {
+  const host = request.headers.get("host") || "batchflix.batch-apps.com";
+  const protocol = host.includes("localhost") ? "http" : "https";
+  return `${protocol}://${host}`;
+}
 
 function baseSlug(email: string, year: number): string {
   const username = email
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       exists: true,
       slug: (data as { slug: string }).slug,
-      url: `${APP_URL}/share/year-in-review/${(data as { slug: string }).slug}`,
+      url: `${requestBaseUrl(request)}/share/year-in-review/${(data as { slug: string }).slug}`,
     });
   }
 
@@ -101,6 +104,6 @@ export async function POST(request: NextRequest) {
 
   return NextResponse.json({
     slug,
-    url: `${APP_URL}/share/year-in-review/${slug}`,
+    url: `${requestBaseUrl(request)}/share/year-in-review/${slug}`,
   });
 }

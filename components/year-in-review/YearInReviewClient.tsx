@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Share2, Download, Loader2, Copy, X } from "lucide-react";
+import { Share2, Loader2, Copy, X } from "lucide-react";
 import { toast } from "sonner";
 import { YearInReviewCard } from "./YearInReviewCard";
 import type { YearInReview } from "@/lib/queries/year-in-review";
@@ -16,7 +16,6 @@ export function YearInReviewClient({ data }: Props) {
   const [isSharing, setIsSharing] = useState(false);
   const [shareInfo, setShareInfo] = useState<ShareInfo | null>(null);
   const [isUnsharing, setIsUnsharing] = useState(false);
-  const [isDownloading, setIsDownloading] = useState(false);
 
   // Check for existing snapshot on mount
   useEffect(() => {
@@ -79,45 +78,11 @@ export function YearInReviewClient({ data }: Props) {
     toast.success("Link copied!");
   };
 
-  const handleDownload = async () => {
-    setIsDownloading(true);
-    try {
-      const response = await fetch(`/year-in-review/${data.year}/download`);
-      if (!response.ok) throw new Error("Failed to generate image");
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `batchflix-${data.year}-in-review.png`;
-      link.click();
-      URL.revokeObjectURL(url);
-      toast.success("Image downloaded!");
-    } catch (err) {
-      console.error(err);
-      toast.error("Could not generate image. Try again.");
-    } finally {
-      setIsDownloading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#0a0a0a] px-4 py-8">
       {/* Action controls */}
       <div className="mx-auto mb-6 max-w-2xl">
         <div className="flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex items-center gap-2 rounded-lg border border-[#1f1f1f] px-4 py-2 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/60 hover:text-white disabled:opacity-60"
-          >
-            {isDownloading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="h-4 w-4" />
-            )}
-            {isDownloading ? "Generating..." : "Download"}
-          </button>
           <button
             type="button"
             onClick={handleShare}

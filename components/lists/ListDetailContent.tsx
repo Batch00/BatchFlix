@@ -295,6 +295,96 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
 }
 
 
+type SortableSublistChipProps = {
+  sub: SublistSummary;
+  isProtected: boolean;
+  onEdit: (sub: SublistSummary) => void;
+  onDelete: (sub: SublistSummary) => void;
+};
+
+function SortableSublistChip({
+  sub,
+  isProtected,
+  onEdit,
+  onDelete,
+}: SortableSublistChipProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: sub.id });
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      className="group relative"
+    >
+      <Link
+        href={`/lists/${sub.id}`}
+        onClick={(e) => {
+          if (isDragging) e.preventDefault();
+        }}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-2 text-sm transition-colors hover:border-[#2563EB]/40",
+          isProtected ? "pr-3" : "pr-12"
+        )}
+      >
+        <span
+          {...attributes}
+          {...listeners}
+          aria-label="Drag to reorder"
+          onClick={(e) => e.preventDefault()}
+          className="cursor-grab touch-none text-muted-foreground/60 active:cursor-grabbing"
+        >
+          <GripVertical className="h-3 w-3" />
+        </span>
+        <span
+          className={cn(
+            "h-2 w-2 flex-shrink-0 rounded-full",
+            COLOR_BG[sub.color] ?? "bg-blue-600"
+          )}
+        />
+        <span className="font-medium text-foreground">{sub.name}</span>
+        <span className="text-muted-foreground/70">{sub.item_count}</span>
+      </Link>
+      {!isProtected && (
+        <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+          <button
+            type="button"
+            aria-label={`Edit ${sub.name}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onEdit(sub);
+            }}
+            className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+          >
+            <Pencil className="h-3 w-3" />
+          </button>
+          <button
+            type="button"
+            aria-label={`Delete ${sub.name}`}
+            onClick={(e) => {
+              e.preventDefault();
+              onDelete(sub);
+            }}
+            className="rounded-full p-0.5 text-muted-foreground hover:text-destructive"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Props = {
   list: ListWithItems;
 };
@@ -303,6 +393,9 @@ export function ListDetailContent({ list }: Props) {
   const router = useRouter();
   const { openForList } = useSearchContext();
   const [items, setItems] = useState<ListItemRow[]>(list.list_items);
+  const [sublists, setSublists] = useState<SublistSummary[]>(
+    list.sublists ?? []
+  );
   const [view, setView] = usePersistedState<"grid" | "list">(
     VIEW_PREF_KEY,
     "list"
@@ -319,6 +412,44 @@ export function ListDetailContent({ list }: Props) {
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
+  );
+
+  // Keep local sublists in sync when the server re-fetches (e.g. after a
+  // create/delete sublist triggers router.refresh()). Syncing during render
+  // (rather than in an effect) avoids an extra render pass; the reference
+  // check makes this a no-op on client-only updates like drag reordering.
+  const [syncedSublists, setSyncedSublists] = useState(list.sublists);
+  if (list.sublists !== syncedSublists) {
+    setSyncedSublists(list.sublists);
+    setSublists(list.sublists ?? []);
+  }
+
+  const handleSublistDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const oldIndex = sublists.findIndex((s) => s.id === active.id);
+      const newIndex = sublists.findIndex((s) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const prev = sublists;
+      const newSublists = arrayMove(sublists, oldIndex, newIndex);
+      setSublists(newSublists);
+
+      try {
+        const res = await fetch(`/api/lists/reorder`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listIds: newSublists.map((s) => s.id) }),
+        });
+        if (!res.ok) throw new Error();
+      } catch {
+        setSublists(prev);
+        toast.error("Failed to save order");
+      }
+    },
+    [sublists]
   );
 
   const handleDragEnd = useCallback(
@@ -544,62 +675,42 @@ export function ListDetailContent({ list }: Props) {
       </div>
 
       {/* Sublists section (only for parent lists) */}
-      {hasSubl && list.sublists && (
+      {hasSubl && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <Layers className="h-4 w-4 text-muted-foreground" />
             Sublists
           </div>
-          <div className="flex flex-wrap gap-2">
-            {list.sublists.map((sub) => (
-              <div key={sub.id} className="group relative">
-                <Link
-                  href={`/lists/${sub.id}`}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-3 text-sm transition-colors hover:border-[#2563EB]/40",
-                    PROTECTED_SUBLISTS.has(sub.name) ? "pr-3" : "pr-12"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "h-2 w-2 flex-shrink-0 rounded-full",
-                      COLOR_BG[sub.color] ?? "bg-blue-600"
-                    )}
-                  />
-                  <span className="font-medium text-foreground">{sub.name}</span>
-                  <span className="text-muted-foreground/70">{sub.item_count}</span>
-                </Link>
-                {!PROTECTED_SUBLISTS.has(sub.name) && (
-                  <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      aria-label={`Edit ${sub.name}`}
-                      onClick={(e) => { e.preventDefault(); setEditSublist(sub); }}
-                      className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
-                    >
-                      <Pencil className="h-3 w-3" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Delete ${sub.name}`}
-                      onClick={() => setDeleteSublist(sub)}
-                      className="rounded-full p-0.5 text-muted-foreground hover:text-destructive"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
-            <button
-              type="button"
-              onClick={() => setCreateSublistOpen(true)}
-              className="flex items-center gap-1.5 rounded-full border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleSublistDragEnd}
+          >
+            <SortableContext
+              items={sublists.map((s) => s.id)}
+              strategy={rectSortingStrategy}
             >
-              <Plus className="h-3.5 w-3.5" />
-              New sublist
-            </button>
-          </div>
+              <div className="flex flex-wrap gap-2">
+                {sublists.map((sub) => (
+                  <SortableSublistChip
+                    key={sub.id}
+                    sub={sub}
+                    isProtected={PROTECTED_SUBLISTS.has(sub.name)}
+                    onEdit={setEditSublist}
+                    onDelete={setDeleteSublist}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setCreateSublistOpen(true)}
+                  className="flex items-center gap-1.5 rounded-full border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  New sublist
+                </button>
+              </div>
+            </SortableContext>
+          </DndContext>
         </div>
       )}
 

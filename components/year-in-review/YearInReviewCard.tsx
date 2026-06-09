@@ -56,17 +56,15 @@ export function YearInReviewCard({ data }: Props) {
   );
   const bestMonthName = data.bestMonth?.month ?? null;
   const topGenreMax = data.topGenres[0]?.count ?? 1;
-  const avgDisplay =
-    data.avgRating !== null ? `${data.avgRating.toFixed(1)}★` : "--";
 
   return (
-    <div className="relative mx-auto max-w-2xl rounded-2xl border border-[#1f1f1f] bg-[#111111] p-6 md:p-8">
+    <div className="relative mx-auto max-w-lg rounded-2xl border border-[#1f1f1f] bg-[#111111] p-4 md:max-w-2xl md:p-8">
       {/* Header */}
       <div className="mb-8 text-center">
-        <div className="text-8xl font-black tracking-tight text-[#2563EB]">
+        <div className="text-6xl font-black tracking-tight text-[#2563EB] md:text-8xl">
           {data.year}
         </div>
-        <div className="mt-1 text-2xl font-light uppercase tracking-widest text-white">
+        <div className="mt-1 text-lg font-light uppercase tracking-widest text-white md:text-2xl">
           Year in Review
         </div>
       </div>
@@ -74,13 +72,15 @@ export function YearInReviewCard({ data }: Props) {
       {/* Big numbers row */}
       <div className="mb-8 grid grid-cols-3 divide-x divide-[#1f1f1f]">
         <div className="px-2 text-center sm:px-4">
-          <div className="text-5xl font-black text-white">{data.totalItems}</div>
+          <div className="text-4xl font-black text-white md:text-5xl">
+            {data.totalItems}
+          </div>
           <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             films &amp; shows
           </div>
         </div>
         <div className="px-2 text-center sm:px-4">
-          <div className="text-5xl font-black text-[#2563EB]">
+          <div className="text-4xl font-black text-[#2563EB] md:text-5xl">
             {data.totalHours}
           </div>
           <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
@@ -88,7 +88,16 @@ export function YearInReviewCard({ data }: Props) {
           </div>
         </div>
         <div className="px-2 text-center sm:px-4">
-          <div className="text-5xl font-black text-white">{avgDisplay}</div>
+          <div className="flex items-baseline justify-center gap-1">
+            <span className="text-4xl font-black text-white md:text-5xl">
+              {data.avgRating !== null ? data.avgRating.toFixed(1) : "--"}
+            </span>
+            {data.avgRating !== null && (
+              <span className="text-2xl font-black text-white md:text-3xl">
+                ★
+              </span>
+            )}
+          </div>
           <div className="mt-1 text-xs uppercase tracking-wider text-muted-foreground">
             avg rating
           </div>
@@ -102,7 +111,7 @@ export function YearInReviewCard({ data }: Props) {
           <div className="mb-3 text-xs uppercase tracking-wider text-muted-foreground">
             most watched genre
           </div>
-          <div className="mb-3 text-3xl font-bold leading-tight text-white">
+          <div className="mb-3 text-xl font-bold leading-tight text-white md:text-3xl">
             {data.topGenre ?? "--"}
           </div>
           <div className="space-y-2">
@@ -130,7 +139,7 @@ export function YearInReviewCard({ data }: Props) {
           <div className="mb-3 text-xs uppercase tracking-wider text-muted-foreground">
             best month
           </div>
-          <div className="mb-1 text-3xl font-bold leading-tight text-white">
+          <div className="mb-1 text-xl font-bold leading-tight text-white md:text-3xl">
             {data.bestMonth?.month ?? "--"}
           </div>
           {data.bestMonth && (

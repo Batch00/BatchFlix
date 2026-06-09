@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getYearInReview } from "@/lib/queries/year-in-review";
 import { YearInReviewClient } from "@/components/year-in-review/YearInReviewClient";
+import { BackButton } from "@/components/ui/BackButton";
 
 type Props = {
   params: Promise<{ year: string }>;
@@ -42,5 +43,10 @@ export default async function YearInReviewPage({ params }: Props) {
     );
   }
 
-  return <YearInReviewClient data={data} />;
+  return (
+    <>
+      <BackButton />
+      <YearInReviewClient data={data} />
+    </>
+  );
 }

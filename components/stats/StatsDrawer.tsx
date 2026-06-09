@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv, LayoutGrid, List } from "lucide-react";
@@ -10,11 +10,50 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import type { StatsItem } from "@/lib/queries/stats";
 
 type MediaFilter = "all" | "movie" | "tv";
 type ViewMode = "grid" | "list";
+type SortOption = "default" | "title" | "rating" | "watch_date" | "release_year";
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: "default", label: "Default" },
+  { value: "title", label: "Title A-Z" },
+  { value: "rating", label: "Rating" },
+  { value: "watch_date", label: "Watch Date" },
+  { value: "release_year", label: "Release Year" },
+];
+
+function sortStatsItems(items: StatsItem[], sort: SortOption): StatsItem[] {
+  if (sort === "default") return items;
+  const copy = [...items];
+  switch (sort) {
+    case "title":
+      return copy.sort((a, b) => a.title.localeCompare(b.title));
+    case "rating":
+      return copy.sort((a, b) => {
+        if (a.rating === null) return b.rating === null ? 0 : 1;
+        if (b.rating === null) return -1;
+        return b.rating - a.rating;
+      });
+    case "watch_date":
+      return copy.sort((a, b) =>
+        (b.watched_date ?? "").localeCompare(a.watched_date ?? "")
+      );
+    case "release_year":
+      return copy.sort((a, b) =>
+        (b.release_date ?? "").localeCompare(a.release_date ?? "")
+      );
+  }
+}
 
 const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
   watched: { bg: "bg-blue-900/80", text: "text-blue-200", label: "Watched" },
@@ -33,11 +72,17 @@ type Props = {
 export function StatsDrawer({ isOpen, onClose, title, items, timeRangeLabel }: Props) {
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
 
   const filtered =
     mediaFilter === "all"
       ? items
       : items.filter((item) => item.media_type === mediaFilter);
+
+  const sorted = useMemo(
+    () => sortStatsItems(filtered, sortBy),
+    [filtered, sortBy]
+  );
 
   return (
     <Sheet open={isOpen} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -50,7 +95,7 @@ export function StatsDrawer({ isOpen, onClose, title, items, timeRangeLabel }: P
         </SheetHeader>
 
         {/* Filter + view toggle row */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-6 py-3">
           <div className="flex gap-1.5">
             {(
               [
@@ -75,46 +120,67 @@ export function StatsDrawer({ isOpen, onClose, title, items, timeRangeLabel }: P
             ))}
           </div>
 
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setViewMode("grid")}
-              aria-label="Grid view"
-              className={cn(
-                "rounded-md p-1.5 transition-colors",
-                viewMode === "grid"
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
+          <div className="flex items-center gap-2">
+            <Select
+              value={sortBy}
+              onValueChange={(v) => setSortBy(v as SortOption)}
             >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              aria-label="List view"
-              className={cn(
-                "rounded-md p-1.5 transition-colors",
-                viewMode === "list"
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              <List className="h-4 w-4" />
-            </button>
+              <SelectTrigger
+                size="sm"
+                className="w-auto border-[#1f1f1f] bg-transparent text-sm"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <div className="flex gap-1">
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                aria-label="Grid view"
+                className={cn(
+                  "rounded-md p-1.5 transition-colors",
+                  viewMode === "grid"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                aria-label="List view"
+                className={cn(
+                  "rounded-md p-1.5 transition-colors",
+                  viewMode === "list"
+                    ? "bg-secondary text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          {filtered.length === 0 ? (
+          {sorted.length === 0 ? (
             <div className="flex items-center justify-center py-16">
               <p className="text-sm text-muted-foreground">No items match</p>
             </div>
           ) : viewMode === "grid" ? (
-            <GridView items={filtered} onClose={onClose} />
+            <GridView items={sorted} onClose={onClose} />
           ) : (
-            <ListView items={filtered} onClose={onClose} />
+            <ListView items={sorted} onClose={onClose} />
           )}
         </div>
       </SheetContent>

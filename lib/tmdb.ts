@@ -93,6 +93,16 @@ export interface KeyCrew {
   producers: string[];
 }
 
+export interface TMDBReleaseDatesResult {
+  iso_3166_1: string;
+  release_dates: Array<{ certification: string; type: number }>;
+}
+
+export interface TMDBContentRatingResult {
+  iso_3166_1: string;
+  rating: string;
+}
+
 export interface TMDBMovie {
   id: number;
   title: string;
@@ -106,6 +116,11 @@ export interface TMDBMovie {
   vote_count: number;
   homepage: string;
   production_companies: TMDBProductionCompany[];
+  tagline?: string;
+  status?: string;
+  original_language?: string;
+  budget?: number;
+  revenue?: number;
 }
 
 export interface TMDBMovieDetail extends TMDBMovie {
@@ -124,6 +139,7 @@ export interface TMDBMovieDetail extends TMDBMovie {
   "watch/providers"?: TMDBWatchProviders;
   recommendations?: { results: TMDBSearchResult[] };
   keywords?: { keywords: TMDBKeyword[] };
+  release_dates?: { results: TMDBReleaseDatesResult[] };
 }
 
 export interface TMDBTVShow {
@@ -142,6 +158,9 @@ export interface TMDBTVShow {
   homepage: string;
   production_companies: TMDBProductionCompany[];
   seasons?: TMDBSeason[];
+  tagline?: string;
+  status?: string;
+  original_language?: string;
 }
 
 export interface TMDBTVDetail extends TMDBTVShow {
@@ -155,6 +174,7 @@ export interface TMDBTVDetail extends TMDBTVShow {
   "watch/providers"?: TMDBWatchProviders;
   recommendations?: { results: TMDBSearchResult[] };
   keywords?: { results: TMDBKeyword[] };
+  content_ratings?: { results: TMDBContentRatingResult[] };
 }
 
 export interface TMDBSearchResult {

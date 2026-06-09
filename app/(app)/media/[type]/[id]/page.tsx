@@ -3,9 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { User, Film, Tv, Globe } from "lucide-react";
+import { User, Film, Tv, Globe, Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cn, formatMoney, getLanguageName } from "@/lib/utils";
 import {
   normalizeMediaItem,
   getKeyCrew,
@@ -37,11 +38,45 @@ function formatRuntime(minutes: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function formatVoteCount(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  })
+    .format(n)
+    .toLowerCase();
+}
+
+function getContentRating(
+  data: TMDBMovieDetail | TMDBTVDetail,
+  mediaType: "movie" | "tv"
+): string | null {
+  if (mediaType === "movie") {
+    const results = (data as TMDBMovieDetail).release_dates?.results ?? [];
+    const us = results.find((r) => r.iso_3166_1 === "US");
+    if (!us) return null;
+    const theatrical = us.release_dates.find(
+      (rd) => rd.type === 3 && rd.certification
+    );
+    const anyCert = us.release_dates.find((rd) => rd.certification);
+    return (theatrical ?? anyCert)?.certification || null;
+  }
+  const results = (data as TMDBTVDetail).content_ratings?.results ?? [];
+  const us = results.find((r) => r.iso_3166_1 === "US");
+  return us?.rating || null;
+}
+
+const STATUS_PILL_STYLES: Record<string, string> = {
+  "Returning Series": "bg-green-900/40 text-green-400",
+  "In Production": "bg-yellow-900/40 text-yellow-400",
+  Ended: "bg-secondary text-muted-foreground",
+};
+
 async function fetchTMDB(
   type: string,
   id: string
 ): Promise<TMDBMovieDetail | TMDBTVDetail | null> {
-  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders,recommendations,keywords`;
+  const url = `https://api.themoviedb.org/3/${type}/${id}?append_to_response=credits,videos,external_ids,watch%2Fproviders,recommendations,keywords,release_dates,content_ratings`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
     next: { revalidate: 3600 },
@@ -315,6 +350,24 @@ async function MediaDetailData({
   const backdropPath = tmdbData.backdrop_path;
   const posterPath = tmdbData.poster_path;
 
+  // Additional TMDB detail fields (already present on the detail response)
+  const voteAverage = tmdbData.vote_average ?? 0;
+  const voteCount = tmdbData.vote_count ?? 0;
+  const tagline = tmdbData.tagline ?? "";
+  const statusText = tmdbData.status ?? "";
+  const originalLanguage = tmdbData.original_language ?? "";
+  const contentRating = getContentRating(tmdbData, mediaType);
+  const budget =
+    mediaType === "movie" ? (tmdbData as TMDBMovieDetail).budget ?? 0 : 0;
+  const revenue =
+    mediaType === "movie" ? (tmdbData as TMDBMovieDetail).revenue ?? 0 : 0;
+  const showStatus =
+    statusText && statusText !== "Released" ? statusText : null;
+  const statusPillClass = showStatus
+    ? STATUS_PILL_STYLES[showStatus] ?? "bg-secondary text-muted-foreground"
+    : null;
+  const isForeign = !!originalLanguage && originalLanguage !== "en";
+
   return (
     <div className="min-h-screen bg-background -mt-4">
       <BackButton />
@@ -377,6 +430,26 @@ async function MediaDetailData({
                 <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
                   {mediaType === "movie" ? "Movie" : "TV"}
                 </span>
+                {showStatus && statusPillClass && (
+                  <span
+                    className={cn(
+                      "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                      statusPillClass
+                    )}
+                  >
+                    {showStatus}
+                  </span>
+                )}
+                {contentRating && (
+                  <span className="rounded border border-[#1f1f1f] px-2 py-0.5 font-mono text-xs text-[#71717a]">
+                    {contentRating}
+                  </span>
+                )}
+                {isForeign && (
+                  <span className="rounded border border-[#1f1f1f] px-2 py-0.5 text-xs text-[#71717a]">
+                    {getLanguageName(originalLanguage)}
+                  </span>
+                )}
                 {tmdbData.genres?.map((g) => (
                   <span
                     key={g.id}
@@ -419,7 +492,40 @@ async function MediaDetailData({
                   </p>
                 </div>
               )}
+
+              {mediaType === "movie" && budget > 0 && (
+                <div className="flex items-center justify-center gap-2 md:justify-start">
+                  <div className="text-center md:text-left">
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                      Budget
+                    </p>
+                    <p className="text-sm text-foreground">
+                      {formatMoney(budget)}
+                    </p>
+                  </div>
+                  {revenue > 0 && (
+                    <>
+                      <span className="text-muted-foreground">&middot;</span>
+                      <div className="text-center md:text-left">
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                          Box Office
+                        </p>
+                        <p className="text-sm text-foreground">
+                          {formatMoney(revenue)}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
+
+            {/* Tagline */}
+            {tagline && (
+              <p className="max-w-2xl text-sm italic text-[#71717a]">
+                {tagline}
+              </p>
+            )}
 
             {/* 2. Overview */}
             {tmdbData.overview && (
@@ -431,7 +537,21 @@ async function MediaDetailData({
             {/* 3. Crew grid */}
             <CrewGrid keyCrew={keyCrew} directorLabel={directorLabel} />
 
-            {/* 4. External links */}
+            {/* Community rating */}
+            {voteCount > 0 && (
+              <div className="flex items-center justify-center gap-1.5 md:justify-start">
+                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                <span className="text-sm font-medium text-foreground">
+                  {voteAverage.toFixed(1)}
+                </span>
+                <span className="text-xs text-muted-foreground">/10</span>
+                <span className="text-xs text-muted-foreground">
+                  ({formatVoteCount(voteCount)} votes)
+                </span>
+              </div>
+            )}
+
+            {/* External links */}
             <div className="flex flex-wrap justify-center gap-2 md:justify-start">
               {externalIds?.imdb_id && (
                 <a

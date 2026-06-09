@@ -10,6 +10,7 @@ import {
   Play,
   Bookmark,
   Search,
+  Sparkles,
   X,
 } from "lucide-react";
 import {
@@ -67,6 +68,7 @@ type LibraryPrefs = {
   status?: Status;
   mediaType?: MediaType;
   sort?: Sort;
+  newSeason?: boolean;
 };
 
 function readLibraryPrefs(): LibraryPrefs {
@@ -175,6 +177,9 @@ export function LibraryContent({ initialItems }: Props) {
     }
     return readLibraryPrefs().sort ?? DEFAULT_SORT;
   });
+  const [newSeasonOnly, setNewSeasonOnly] = useState<boolean>(
+    () => readLibraryPrefs().newSeason ?? false
+  );
 
   // Sync items when the server re-fetches (e.g. after router.refresh)
   useEffect(() => {
@@ -201,7 +206,12 @@ export function LibraryContent({ initialItems }: Props) {
 
   // Persist filters to localStorage and reflect them in the URL (for
   // shareability) without triggering a server round-trip.
-  function syncFilters(next: { status: Status; mediaType: MediaType; sort: Sort }) {
+  function syncFilters(next: {
+    status: Status;
+    mediaType: MediaType;
+    sort: Sort;
+    newSeason: boolean;
+  }) {
     try {
       localStorage.setItem(LIB_PREF_KEY, JSON.stringify(next));
     } catch {
@@ -218,17 +228,23 @@ export function LibraryContent({ initialItems }: Props) {
 
   function handleStatusChange(newStatus: Status) {
     setStatusState(newStatus);
-    syncFilters({ status: newStatus, mediaType, sort });
+    syncFilters({ status: newStatus, mediaType, sort, newSeason: newSeasonOnly });
   }
 
   function handleMediaTypeChange(newMediaType: MediaType) {
     setMediaTypeState(newMediaType);
-    syncFilters({ status, mediaType: newMediaType, sort });
+    syncFilters({ status, mediaType: newMediaType, sort, newSeason: newSeasonOnly });
   }
 
   function handleSortChange(newSort: Sort) {
     setSortState(newSort);
-    syncFilters({ status, mediaType, sort: newSort });
+    syncFilters({ status, mediaType, sort: newSort, newSeason: newSeasonOnly });
+  }
+
+  function handleNewSeasonToggle() {
+    const next = !newSeasonOnly;
+    setNewSeasonOnly(next);
+    syncFilters({ status, mediaType, sort, newSeason: next });
   }
 
   function handleRemoved(id: string) {
@@ -242,6 +258,18 @@ export function LibraryContent({ initialItems }: Props) {
     if (mediaType !== "all") {
       rows = rows.filter((item) => item.media_items?.media_type === mediaType);
     }
+    if (newSeasonOnly) {
+      rows = rows.filter((item) => {
+        const watched = item.watchedEpisodes ?? 0;
+        const total = item.media_items?.total_episodes ?? 0;
+        return (
+          item.media_items?.media_type === "tv" &&
+          item.status === "watched" &&
+          watched > 0 &&
+          total > watched
+        );
+      });
+    }
     if (debouncedQuery) {
       const q = debouncedQuery.toLowerCase();
       rows = rows.filter((item) =>
@@ -249,7 +277,7 @@ export function LibraryContent({ initialItems }: Props) {
       );
     }
     return sortItems(rows, sort);
-  }, [items, status, mediaType, debouncedQuery, sort]);
+  }, [items, status, mediaType, newSeasonOnly, debouncedQuery, sort]);
 
   const showEmpty = filteredItems.length === 0;
   const empty: EmptyState = debouncedQuery
@@ -275,22 +303,39 @@ export function LibraryContent({ initialItems }: Props) {
         <div className="flex flex-col gap-2">
           {/* Row 1: status + sort + view toggle */}
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {FILTER_TABS.map((tab) => (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => handleStatusChange(tab.value)}
-                  className={cn(
-                    "flex-shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
-                    status === tab.value
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  {tab.label}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-nowrap items-center gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {FILTER_TABS.map((tab) => (
+                  <button
+                    key={tab.value}
+                    type="button"
+                    onClick={() => handleStatusChange(tab.value)}
+                    className={cn(
+                      "flex-shrink-0 rounded-md px-3 py-1.5 text-sm transition-colors duration-150",
+                      status === tab.value
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNewSeasonToggle}
+                aria-pressed={newSeasonOnly}
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-150",
+                  newSeasonOnly
+                    ? "border-yellow-500/40 bg-yellow-500/20 text-yellow-300"
+                    : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                )}
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                New Season
+              </button>
             </div>
 
             <div className="flex items-center gap-2">

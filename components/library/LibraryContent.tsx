@@ -181,10 +181,14 @@ export function LibraryContent({ initialItems }: Props) {
     () => readLibraryPrefs().newSeason ?? false
   );
 
-  // Sync items when the server re-fetches (e.g. after router.refresh)
-  useEffect(() => {
+  // Sync items when the server re-fetches (e.g. after router.refresh).
+  // Syncing during render (rather than in an effect) avoids an extra render
+  // pass and the set-state-in-effect lint rule.
+  const [syncedItems, setSyncedItems] = useState(initialItems);
+  if (initialItems !== syncedItems) {
+    setSyncedItems(initialItems);
     setItems(initialItems);
-  }, [initialItems]);
+  }
 
   // Debounce title search 150ms
   useEffect(() => {

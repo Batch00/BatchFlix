@@ -294,8 +294,6 @@ async function MediaDetailData({
   let seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
   let seasonsPreloadedUnwatched: typeof tvSeasons = [];
 
-  console.log("[NewSeason] userMedia status:", userMedia?.status, "| tvProgress rows:", tvProgress.length);
-
   if (mediaType === "tv" && userMedia?.status === "watched" && tvProgress.length > 0) {
     const progressBySeason = tvProgress.reduce<Record<number, number>>((acc, row) => {
       acc[row.season_number] = (acc[row.season_number] ?? 0) + 1;
@@ -305,16 +303,6 @@ async function MediaDetailData({
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() + 30);
     const cutoff = cutoffDate.toISOString().slice(0, 10);
-
-    const maxWatchedSeason =
-      Object.keys(progressBySeason).length > 0
-        ? Math.max(...Object.keys(progressBySeason).map(Number))
-        : 0;
-
-    console.log("[NewSeason] maxWatchedSeason:", maxWatchedSeason);
-    console.log("[NewSeason] cutoff date:", cutoff);
-    console.log("[NewSeason] progressBySeason:", progressBySeason);
-    console.log("[NewSeason] all seasons:", tvSeasons.map((s) => ({ n: s.season_number, aired: s.air_date, epCount: s.episode_count })));
 
     newSeasons = tvSeasons.filter((s) => {
       if (!s.air_date || s.air_date > cutoff) return false;
@@ -341,10 +329,6 @@ async function MediaDetailData({
       ).length;
       return watchedInSeason === 0;
     });
-
-    console.log("[NewSeason] newSeasons found:", newSeasons.map((s) => s.season_number));
-    console.log("[NewSeason] seasonsWithNewEpisodes:", seasonsWithNewEpisodes);
-    console.log("[NewSeason] seasonsPreloadedUnwatched:", seasonsPreloadedUnwatched.map((s) => s.season_number));
   }
 
   const backdropPath = tmdbData.backdrop_path;

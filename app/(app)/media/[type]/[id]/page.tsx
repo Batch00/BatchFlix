@@ -352,6 +352,18 @@ async function MediaDetailData({
     : null;
   const isForeign = !!originalLanguage && originalLanguage !== "en";
 
+  const isUpcoming = (() => {
+    if (!releaseDate) return false
+    const [y, m, d] = releaseDate.split('-')
+    return new Date(+y, +m - 1, +d) > new Date()
+  })()
+  const releasesLabel = isUpcoming && releaseDate
+    ? (() => {
+        const [y, m, d] = releaseDate.split('-')
+        return `Releases ${new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+      })()
+    : null
+
   return (
     <div className="min-h-screen bg-background -mt-4">
       <BackButton />
@@ -416,7 +428,7 @@ async function MediaDetailData({
                 <span className="rounded-full border border-border px-2.5 py-0.5 text-xs text-muted-foreground">
                   {mediaType === "movie" ? "Movie" : "TV"}
                 </span>
-                {showStatus && statusPillClass && (
+                {showStatus && statusPillClass && !(isUpcoming && showStatus === "In Production") && (
                   <span
                     className={cn(
                       "rounded-full px-2.5 py-0.5 text-xs font-medium",
@@ -424,6 +436,11 @@ async function MediaDetailData({
                     )}
                   >
                     {showStatus}
+                  </span>
+                )}
+                {releasesLabel && (
+                  <span className="rounded-full bg-yellow-500/20 px-2.5 py-0.5 text-xs font-medium text-yellow-400">
+                    {releasesLabel}
                   </span>
                 )}
                 {contentRating && (

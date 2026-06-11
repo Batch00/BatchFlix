@@ -157,9 +157,17 @@ export function KeywordResultsClient({
             const key = `${item.id}-${item.media_type}`;
             const entry = libraryMap[key] ?? null;
             const title = item.title ?? item.name ?? "Unknown";
-            const year = (
-              item.release_date ?? item.first_air_date ?? ""
-            ).slice(0, 4);
+            const dateStr = item.release_date ?? item.first_air_date
+            const isUpcoming = (() => {
+              if (!dateStr) return false
+              const [y, m, d] = dateStr.split('-')
+              return new Date(+y, +m - 1, +d) > new Date()
+            })()
+            const formattedDate = (() => {
+              if (!dateStr) return null
+              const [y, m, d] = dateStr.split('-')
+              return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+            })()
 
             return (
               <div key={key} className="group relative flex flex-col">
@@ -186,6 +194,12 @@ export function KeywordResultsClient({
 
                     <MediaTypeBadge mediaType={item.media_type} />
 
+                    {isUpcoming && (
+                      <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[9px] font-bold text-black">
+                        UPCOMING
+                      </div>
+                    )}
+
                     {!entry && (
                       <button
                         type="button"
@@ -207,8 +221,8 @@ export function KeywordResultsClient({
                 <p className="mt-1 truncate text-xs font-medium text-foreground">
                   {title}
                 </p>
-                {year && (
-                  <p className="text-xs text-muted-foreground">{year}</p>
+                {formattedDate && (
+                  <p className="text-[10px] text-muted-foreground">{formattedDate}</p>
                 )}
               </div>
             );

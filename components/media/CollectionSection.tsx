@@ -74,6 +74,16 @@ export function CollectionSection({
         {parts.map((part) => {
           const isCurrent = part.id === currentTmdbId;
           const status = libraryMap[`movie:${part.id}`] ?? null;
+          const isUpcoming = (() => {
+            if (!part.release_date) return false
+            const [y, m, d] = part.release_date.split('-')
+            return new Date(+y, +m - 1, +d) > new Date()
+          })()
+          const formattedDate = (() => {
+            if (!part.release_date) return null
+            const [y, m, d] = part.release_date.split('-')
+            return new Date(+y, +m - 1, +d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+          })()
 
           return (
             <div
@@ -104,6 +114,12 @@ export function CollectionSection({
 
                   <MediaTypeBadge mediaType="movie" />
 
+                  {isUpcoming && (
+                    <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[9px] font-bold text-black">
+                      UPCOMING
+                    </div>
+                  )}
+
                   {status ? (
                     <StatusBadge status={status as "watched" | "watching" | "watchlist"} />
                   ) : (
@@ -125,10 +141,8 @@ export function CollectionSection({
               <p className="mt-1 truncate text-xs font-medium text-foreground">
                 {part.title}
               </p>
-              {part.release_date && (
-                <p className="text-xs text-muted-foreground">
-                  {part.release_date.slice(0, 4)}
-                </p>
+              {formattedDate && (
+                <p className="text-[10px] text-muted-foreground">{formattedDate}</p>
               )}
             </div>
           );

@@ -67,6 +67,11 @@ export function MediaRow({ item, onRemoved }: Props) {
 
   const { media_items: m } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
+  const isUpcoming = (() => {
+    if (!m.release_date) return false
+    const [yr, mo, dy] = m.release_date.split('-')
+    return new Date(+yr, +mo - 1, +dy) > new Date()
+  })()
 
   function formatDate(d: string) {
     const [yr, mo, dy] = d.split("T")[0].split("-");
@@ -253,7 +258,11 @@ export function MediaRow({ item, onRemoved }: Props) {
           >
             {STATUS_LABELS[rowStatus]}
           </span>
-          {hasNewContent && (
+          {isUpcoming ? (
+            <span className="rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[10px] font-bold text-black">
+              UPCOMING
+            </span>
+          ) : hasNewContent && (
             <span className="rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
               New Season
             </span>
@@ -280,7 +289,11 @@ export function MediaRow({ item, onRemoved }: Props) {
       <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="hidden min-w-0 flex-1 md:block">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
-          {hasNewContent && (
+          {isUpcoming ? (
+            <span className="flex-shrink-0 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[10px] font-bold text-black">
+              UPCOMING
+            </span>
+          ) : hasNewContent && (
             <span className="flex-shrink-0 rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
               New Season
             </span>

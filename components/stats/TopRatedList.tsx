@@ -62,6 +62,7 @@ export function TopRatedList({ items, allItems, onDrillDown }: Props) {
                       src={`https://image.tmdb.org/t/p/w92${item.posterPath}`}
                       alt={item.title}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="32px"
                     />

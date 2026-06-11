@@ -39,6 +39,7 @@ function PosterThumbnail({
       alt={item.title}
       width={width}
       height={height}
+      unoptimized
       className="shrink-0 rounded-md object-cover"
       onError={() => setImgError(true)}
     />

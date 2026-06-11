@@ -73,6 +73,7 @@ function CreditCard({
               src={`https://image.tmdb.org/t/p/w185${credit.poster_path}`}
               alt={title}
               fill
+              unoptimized
               className="object-cover"
               sizes="(max-width: 640px) 33vw, 25vw"
             />
@@ -136,6 +137,7 @@ function CreditListRow({
             src={`https://image.tmdb.org/t/p/w92${credit.poster_path}`}
             alt={title}
             fill
+            unoptimized
             className="object-cover"
             sizes="40px"
           />

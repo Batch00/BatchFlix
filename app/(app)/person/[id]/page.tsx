@@ -119,6 +119,7 @@ async function PersonDetailData({
               src={`https://image.tmdb.org/t/p/w185${personData.profile_path}`}
               alt={personData.name}
               fill
+              unoptimized
               className="object-cover"
               sizes="150px"
             />

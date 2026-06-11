@@ -188,6 +188,7 @@ export function MediaRow({ item, onRemoved }: Props) {
             src={`https://image.tmdb.org/t/p/w92${m.poster_path}`}
             alt={m.title}
             fill
+            unoptimized
             className="object-cover"
             sizes="40px"
           />

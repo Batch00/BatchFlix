@@ -92,6 +92,7 @@ export function CollectionSection({
                       src={`https://image.tmdb.org/t/p/w185${part.poster_path}`}
                       alt={part.title}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="120px"
                     />

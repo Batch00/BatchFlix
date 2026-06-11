@@ -86,6 +86,7 @@ export function RecommendationsSection({
                       src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
                       alt={title}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="120px"
                     />

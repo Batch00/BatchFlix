@@ -363,6 +363,7 @@ async function MediaDetailData({
             src={`https://image.tmdb.org/t/p/w1280${backdropPath}`}
             alt={title}
             fill
+            unoptimized
             className="object-cover object-top"
             priority
             sizes="100vw"
@@ -383,6 +384,7 @@ async function MediaDetailData({
                 src={`https://image.tmdb.org/t/p/w500${posterPath}`}
                 alt={title}
                 fill
+                unoptimized
                 className="object-cover"
                 sizes="180px"
               />
@@ -625,6 +627,7 @@ async function MediaDetailData({
                         src={`https://image.tmdb.org/t/p/w185${member.profile_path}`}
                         alt={member.name}
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="80px"
                       />

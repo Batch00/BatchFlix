@@ -123,6 +123,7 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
               src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
               alt={m.title}
               fill
+              unoptimized
               className="object-cover"
               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
@@ -225,6 +226,7 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
             src={`https://image.tmdb.org/t/p/w92${m.poster_path}`}
             alt={m.title}
             fill
+            unoptimized
             className="object-cover"
             sizes="40px"
           />

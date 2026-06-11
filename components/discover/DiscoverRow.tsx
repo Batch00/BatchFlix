@@ -114,6 +114,7 @@ export function DiscoverRow({ title, items, initialLibraryMap, viewMode = "grid"
                       src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
                       alt={itemTitle}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="40px"
                     />
@@ -216,6 +217,7 @@ export function DiscoverRow({ title, items, initialLibraryMap, viewMode = "grid"
                         src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
                         alt={itemTitle}
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="120px"
                       />

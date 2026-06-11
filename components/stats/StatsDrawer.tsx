@@ -207,6 +207,7 @@ function GridView({ items, onClose }: { items: StatsItem[]; onClose: () => void 
                 src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
                 alt={item.title}
                 fill
+                unoptimized
                 className="object-cover"
                 sizes="(max-width: 640px) 50vw, 33vw"
               />
@@ -275,6 +276,7 @@ function ListView({ items, onClose }: { items: StatsItem[]; onClose: () => void 
                   src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
                   alt={item.title}
                   fill
+                  unoptimized
                   className="object-cover"
                   sizes="40px"
                 />

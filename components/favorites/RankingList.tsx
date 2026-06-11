@@ -92,6 +92,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
             src={`https://image.tmdb.org/t/p/w92${m.poster_path}`}
             alt={m.title}
             fill
+            unoptimized
             className="object-cover"
             sizes="48px"
           />

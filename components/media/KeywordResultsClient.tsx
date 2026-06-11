@@ -170,6 +170,7 @@ export function KeywordResultsClient({
                         src={`https://image.tmdb.org/t/p/w185${item.poster_path}`}
                         alt={title}
                         fill
+                        unoptimized
                         className="object-cover"
                         sizes="(max-width: 640px) 33vw, 20vw"
                       />
@@ -236,6 +237,7 @@ export function KeywordResultsClient({
                       src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}
                       alt={title}
                       fill
+                      unoptimized
                       className="object-cover"
                       sizes="40px"
                     />

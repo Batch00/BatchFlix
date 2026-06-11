@@ -38,6 +38,7 @@ export function SearchResultRow({
             src={`https://image.tmdb.org/t/p/w185${result.poster_path}`}
             alt={title}
             fill
+            unoptimized
             className="object-cover"
             sizes="40px"
           />

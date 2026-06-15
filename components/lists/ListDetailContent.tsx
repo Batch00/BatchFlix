@@ -488,6 +488,7 @@ export function ListDetailContent({ list }: Props) {
           keepalive: true,
         });
         if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
+        router.refresh();
       } catch {
         setItems(prev);
         toast.error("Failed to save order");

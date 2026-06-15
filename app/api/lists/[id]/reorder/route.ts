@@ -51,12 +51,16 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
   }
 
   for (const item of parsed.data.items) {
-    await supabase
+    const { error } = await supabase
       .schema("batchflix")
       .from("list_items")
       .update({ position: item.position })
       .eq("id", item.id)
       .eq("list_id", id);
+
+    if (error) {
+      return NextResponse.json({ error: "Failed to update positions" }, { status: 500 });
+    }
   }
 
   return NextResponse.json({ success: true });

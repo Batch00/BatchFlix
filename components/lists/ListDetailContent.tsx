@@ -461,21 +461,26 @@ export function ListDetailContent({ list }: Props) {
 
       const oldIndex = items.findIndex((i) => i.id === active.id);
       const newIndex = items.findIndex((i) => i.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return;
+
+      const prev = items;
       const newItems = arrayMove(items, oldIndex, newIndex);
       setItems(newItems);
 
+      const orderedItems = newItems.map((item, index) => ({
+        id: item.id,
+        position: index,
+      }));
+
       try {
-        await fetch(`/api/lists/${list.id}/reorder`, {
+        const res = await fetch(`/api/lists/${list.id}/reorder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            items: newItems.map((item, index) => ({
-              id: item.id,
-              position: index,
-            })),
-          }),
+          body: JSON.stringify({ items: orderedItems }),
         });
+        if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
       } catch {
+        setItems(prev);
         toast.error("Failed to save order");
       }
     },

@@ -15,6 +15,7 @@ import {
   List,
   GripVertical,
   Layers,
+  Loader2,
   Pencil,
 } from "lucide-react";
 import {
@@ -77,6 +78,7 @@ const STATUS_BADGE: Record<string, string> = {
 type SortableItemProps = {
   item: ListItemRow;
   listId: string;
+  isSaving: boolean;
   onRemove: (mediaId: string) => void;
 };
 
@@ -86,7 +88,7 @@ const GRID_STATUS_BADGE: Record<string, { bg: string; text: string; label: strin
   watchlist: { bg: "bg-zinc-800/80", text: "text-zinc-300", label: "Watchlist" },
 };
 
-function SortableItem({ item, onRemove }: SortableItemProps) {
+function SortableItem({ item, isSaving, onRemove }: SortableItemProps) {
   const {
     attributes,
     listeners,
@@ -114,7 +116,8 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
         href={`/media/${m.media_type}/${m.tmdb_id}`}
         className="block overflow-hidden rounded-lg border border-border bg-card transition-transform duration-150 hover:scale-[1.02]"
         onClick={(e) => {
-          if (isDragging) e.preventDefault();
+          if (isDragging) { e.preventDefault(); return; }
+          if (isSaving) { e.preventDefault(); toast("Saving order..."); }
         }}
       >
         <div className="relative aspect-[2/3] w-full overflow-hidden">
@@ -180,10 +183,11 @@ function SortableItem({ item, onRemove }: SortableItemProps) {
 
 type SortableListRowItemProps = {
   item: ListItemRow;
+  isSaving: boolean;
   onRemove: (mediaId: string) => void;
 };
 
-function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
+function SortableListRowItem({ item, isSaving, onRemove }: SortableListRowItemProps) {
   const {
     attributes,
     listeners,
@@ -218,7 +222,8 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
         href={`/media/${m.media_type}/${m.tmdb_id}`}
         className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
         onClick={(e) => {
-          if (isDragging) e.preventDefault();
+          if (isDragging) { e.preventDefault(); return; }
+          if (isSaving) { e.preventDefault(); toast("Saving order..."); }
         }}
       >
         {m.poster_path ? (
@@ -245,7 +250,8 @@ function SortableListRowItem({ item, onRemove }: SortableListRowItemProps) {
         href={`/media/${m.media_type}/${m.tmdb_id}`}
         className="min-w-0 flex-1"
         onClick={(e) => {
-          if (isDragging) e.preventDefault();
+          if (isDragging) { e.preventDefault(); return; }
+          if (isSaving) { e.preventDefault(); toast("Saving order..."); }
         }}
       >
         <p className="truncate text-sm font-medium text-foreground">
@@ -402,6 +408,7 @@ export function ListDetailContent({ list }: Props) {
     VIEW_PREF_KEY,
     "list"
   );
+  const [isSaving, setIsSaving] = useState(false);
   const [createSublistOpen, setCreateSublistOpen] = useState(false);
   const [deleteSublist, setDeleteSublist] = useState<SublistSummary | null>(null);
   const [deletingSublist, setDeletingSublist] = useState(false);
@@ -472,16 +479,20 @@ export function ListDetailContent({ list }: Props) {
         position: index,
       }));
 
+      setIsSaving(true);
       try {
         const res = await fetch(`/api/lists/${list.id}/reorder`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: orderedItems }),
+          keepalive: true,
         });
         if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
       } catch {
         setItems(prev);
         toast.error("Failed to save order");
+      } finally {
+        setIsSaving(false);
       }
     },
     [items, list.id]
@@ -641,6 +652,12 @@ export function ListDetailContent({ list }: Props) {
         </div>
 
         <div className="flex flex-shrink-0 items-center gap-2">
+          {isSaving && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Saving...
+            </span>
+          )}
           {/* View toggle */}
           <div className="flex items-center rounded-md border border-border">
             <button
@@ -761,6 +778,7 @@ export function ListDetailContent({ list }: Props) {
                     key={item.id}
                     item={item}
                     listId={list.id}
+                    isSaving={isSaving}
                     onRemove={handleRemove}
                   />
                 ))}
@@ -771,6 +789,7 @@ export function ListDetailContent({ list }: Props) {
                   <SortableListRowItem
                     key={item.id}
                     item={item}
+                    isSaving={isSaving}
                     onRemove={handleRemove}
                   />
                 ))}

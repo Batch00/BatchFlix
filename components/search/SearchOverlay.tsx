@@ -49,6 +49,29 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
     return () => clearTimeout(id);
   }, [results]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const prev = {
+      position: body.style.position,
+      top: body.style.top,
+      width: body.style.width,
+      overflow: body.style.overflow,
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.width = "100%";
+    body.style.overflow = "hidden";
+    return () => {
+      body.style.position = prev.position;
+      body.style.top = prev.top;
+      body.style.width = prev.width;
+      body.style.overflow = prev.overflow;
+      window.scrollTo(0, scrollY);
+    };
+  }, [isOpen]);
+
   const navigate = useCallback(
     (index: number) => {
       const result = results[index];
@@ -158,10 +181,11 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
     <div
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
       onClick={onClose}
+      onTouchMove={(e) => e.preventDefault()}
     >
       {/* Mobile: full-screen. Desktop: centered panel */}
       <div
-        className="flex h-full flex-col md:mx-auto md:mt-24 md:h-auto md:max-w-2xl md:px-4"
+        className="flex h-screen h-[100dvh] flex-col md:mx-auto md:mt-24 md:h-auto md:max-w-2xl md:px-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-1 flex-col overflow-hidden bg-[#111111] animate-[fadeIn_0.15s_ease-out] md:rounded-xl md:border md:border-[#1f1f1f] md:shadow-2xl">
@@ -176,7 +200,7 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
             </div>
           )}
 
-          <div className="flex items-center">
+          <div className="flex flex-shrink-0 items-center">
             <input
               ref={inputRef}
               type="text"
@@ -196,43 +220,44 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
           </div>
 
           {showResults && (
-            <div className="border-t border-[#1f1f1f]">
-              <div className="flex-1 overflow-y-auto md:max-h-[480px]">
-                {isLoading && (
-                  <>
-                    <SkeletonRow />
-                    <SkeletonRow />
-                    <SkeletonRow />
-                  </>
+            <div
+              className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t border-[#1f1f1f] md:max-h-[480px] md:flex-none"
+              style={{ WebkitOverflowScrolling: "touch" }}
+            >
+              {isLoading && (
+                <>
+                  <SkeletonRow />
+                  <SkeletonRow />
+                  <SkeletonRow />
+                </>
+              )}
+
+              {!isLoading && error && (
+                <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
+                  <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Search unavailable. Try again.
+                  </p>
+                </div>
+              )}
+
+              {!isLoading && !error && results.length === 0 &&
+                query.length >= 2 && (
+                  <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                    No results for &ldquo;{query}&rdquo;
+                  </p>
                 )}
 
-                {!isLoading && error && (
-                  <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
-                    <RefreshCw className="h-5 w-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      Search unavailable. Try again.
-                    </p>
-                  </div>
-                )}
-
-                {!isLoading && !error && results.length === 0 &&
-                  query.length >= 2 && (
-                    <p className="px-4 py-8 text-center text-sm text-muted-foreground">
-                      No results for &ldquo;{query}&rdquo;
-                    </p>
-                  )}
-
-                {!isLoading && !error &&
-                  results.map((result, i) => (
-                    <SearchResultRow
-                      key={`${result.media_type}-${result.id}`}
-                      result={result}
-                      inLibrary={false}
-                      highlighted={i === highlightedIndex}
-                      onClick={() => handleSelect(i)}
-                    />
-                  ))}
-              </div>
+              {!isLoading && !error &&
+                results.map((result, i) => (
+                  <SearchResultRow
+                    key={`${result.media_type}-${result.id}`}
+                    result={result}
+                    inLibrary={false}
+                    highlighted={i === highlightedIndex}
+                    onClick={() => handleSelect(i)}
+                  />
+                ))}
             </div>
           )}
 

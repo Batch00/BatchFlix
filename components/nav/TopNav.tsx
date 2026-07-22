@@ -249,16 +249,16 @@ export function TopNav({ userEmail }: Props) {
       {/* Mobile bottom nav bar */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-50 block border-t border-[#1f1f1f] bg-[#111111] md:hidden"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 8px)" }}
       >
-        <div className="h-16 flex items-center justify-around px-2">
+        <div className="flex h-14 items-center justify-around px-2 pb-1">
           {bottomNavItems.map(({ href, icon: Icon, label }) => {
             const active = pathname.startsWith(href);
             return (
               <Link
                 key={href}
                 href={href}
-                className="flex flex-col items-center gap-0.5"
+                className="flex min-h-[44px] flex-col items-center justify-center gap-0.5"
               >
                 <Icon
                   size={22}

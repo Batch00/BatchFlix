@@ -27,7 +27,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
       <div className="relative aspect-[2/3] w-full overflow-hidden">
         {m.poster_path ? (
           <Image
-            src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
+            src={`https://image.tmdb.org/t/p/w185${m.poster_path}`}
             alt={m.title}
             fill
             unoptimized

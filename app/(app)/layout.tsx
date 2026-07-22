@@ -54,7 +54,7 @@ export default async function AppLayout({
     <ListPickerProvider>
       <TopNav userEmail={user?.email ?? null} />
       {isDemo && <DemoBanner />}
-      <main className="min-h-[calc(100vh-3.5rem)] pb-24 pt-4 md:pb-0">{children}</main>
+      <main className="min-h-[calc(100vh-3.5rem)] pb-28 pt-4 md:pb-0">{children}</main>
     </ListPickerProvider>
   );
 }

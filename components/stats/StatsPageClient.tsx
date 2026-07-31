@@ -1,16 +1,39 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { BarChart2, Clock, Eye, Film, Star } from "lucide-react";
 import Link from "next/link";
 import { KPICard } from "./KPICard";
-import { GenreChart } from "./GenreChart";
-import { DecadeChart } from "./DecadeChart";
-import { RatingDistributionChart } from "./RatingDistributionChart";
 import { MonthlyHeatmap } from "./MonthlyHeatmap";
 import { TopRatedList } from "./TopRatedList";
-import { StatsDrawer } from "./StatsDrawer";
 import type { StatsData, StatsItem, TimeRange } from "@/lib/queries/stats";
+
+// Recharts pulls in d3 + victory-vendor + redux (~104 kB gzip). It is only
+// needed here and every chart sits below the KPI row, so load it lazily
+// behind a fixed-height skeleton that reserves the same space.
+const ChartSkeleton = () => (
+  <div className="h-[300px] animate-pulse rounded-lg bg-[#1f1f1f]" />
+);
+
+const GenreChart = dynamic(
+  () => import("./GenreChart").then((m) => m.GenreChart),
+  { ssr: false, loading: ChartSkeleton }
+);
+const DecadeChart = dynamic(
+  () => import("./DecadeChart").then((m) => m.DecadeChart),
+  { ssr: false, loading: ChartSkeleton }
+);
+const RatingDistributionChart = dynamic(
+  () => import("./RatingDistributionChart").then((m) => m.RatingDistributionChart),
+  { ssr: false, loading: ChartSkeleton }
+);
+
+// Drill-down drawer: invisible until a chart is clicked, so nothing to reserve.
+const StatsDrawer = dynamic(
+  () => import("./StatsDrawer").then((m) => m.StatsDrawer),
+  { ssr: false }
+);
 
 type Props = {
   stats: StatsData;
@@ -23,9 +46,14 @@ export function StatsPageClient({ stats, range, rangeLabel }: Props) {
   const [drawerTitle, setDrawerTitle] = useState("");
   const [drawerItems, setDrawerItems] = useState<StatsItem[]>([]);
 
+  // Only mount the drawer once something has been drilled into, so its chunk
+  // is never fetched on a visit that does not use it.
+  const [drawerMounted, setDrawerMounted] = useState(false);
+
   const onDrillDown = useCallback((title: string, items: StatsItem[]) => {
     setDrawerTitle(title);
     setDrawerItems(items);
+    setDrawerMounted(true);
     setDrawerOpen(true);
   }, []);
 
@@ -110,13 +138,15 @@ export function StatsPageClient({ stats, range, rangeLabel }: Props) {
         </div>
       )}
 
-      <StatsDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        title={drawerTitle}
-        items={drawerItems}
-        timeRangeLabel={rangeLabel}
-      />
+      {drawerMounted && (
+        <StatsDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          title={drawerTitle}
+          items={drawerItems}
+          timeRangeLabel={rangeLabel}
+        />
+      )}
     </>
   );
 }

@@ -1,50 +1,11 @@
-"use client";
-
-import { useState } from "react";
-import Image from "next/image";
 import { Star, Clapperboard } from "lucide-react";
+import { PosterThumbnail } from "./PosterThumbnail";
 import type { YearInReview } from "@/lib/queries/year-in-review";
-import type { StatsItem } from "@/lib/queries/stats";
 
 const MONTH_ABBREV = [
   "Jan", "Feb", "Mar", "Apr", "May", "Jun",
   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
-
-function PosterThumbnail({
-  item,
-  width,
-  height,
-}: {
-  item: StatsItem;
-  width: number;
-  height: number;
-}) {
-  const [imgError, setImgError] = useState(false);
-
-  if (!item.poster_path || imgError) {
-    return (
-      <div
-        className="flex shrink-0 items-center justify-center rounded-md bg-[#1f1f1f] text-sm font-bold text-muted-foreground"
-        style={{ width, height }}
-      >
-        {item.title[0]}
-      </div>
-    );
-  }
-
-  return (
-    <Image
-      src={`https://image.tmdb.org/t/p/w200${item.poster_path}`}
-      alt={item.title}
-      width={width}
-      height={height}
-      unoptimized
-      className="shrink-0 rounded-md object-cover"
-      onError={() => setImgError(true)}
-    />
-  );
-}
 
 type Props = {
   data: YearInReview;

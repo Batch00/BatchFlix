@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const TMDB_BASE = "https://api.themoviedb.org/3";
 const ALLOWED_PREFIXES = ["/search", "/movie", "/tv", "/person", "/collection", "/configuration", "/trending", "/keyword", "/discover"];
 const NO_CACHE_PREFIXES = ["/search"];
+const LONG_CACHE_PREFIXES = ["/person", "/collection"];
 
 export async function GET(
   request: NextRequest,
@@ -32,7 +33,10 @@ export async function GET(
   const isSearch = NO_CACHE_PREFIXES.some((prefix) => path.startsWith(prefix));
   const headers: Record<string, string> = {};
   if (!isSearch) {
-    headers["Cache-Control"] = "public, s-maxage=3600";
+    // Person and collection data is effectively immutable; everything else
+    // (season episode lists, detail lookups) gets the standard hour.
+    const longLived = LONG_CACHE_PREFIXES.some((p) => path.startsWith(p));
+    headers["Cache-Control"] = `public, s-maxage=${longLived ? 86400 : 3600}`;
   }
 
   return NextResponse.json(data, { status: tmdbRes.status, headers });

@@ -138,7 +138,7 @@ function CreditListRow({
     <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80">
       <Link
         href={`/media/${credit.media_type}/${credit.id}`}
-        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]"
       >
         {credit.poster_path ? (
           <Image

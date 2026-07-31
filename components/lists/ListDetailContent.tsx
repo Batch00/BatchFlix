@@ -121,10 +121,10 @@ function SortableItem({ item, isSaving, onRemove }: SortableItemProps) {
           if (isSaving) { e.preventDefault(); toast("Saving order..."); }
         }}
       >
-        <div className="relative aspect-[2/3] w-full overflow-hidden">
+        <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#1f1f1f]">
           {m.poster_path ? (
             <Image
-              src={`https://image.tmdb.org/t/p/w342${m.poster_path}`}
+              src={`https://image.tmdb.org/t/p/w185${m.poster_path}`}
               alt={m.title}
               fill
               unoptimized
@@ -224,7 +224,7 @@ function SortableListRowItem({ item, isSaving, onRemove }: SortableListRowItemPr
 
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
-        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]"
         onClick={(e) => {
           if (isDragging) { e.preventDefault(); return; }
           if (isSaving) { e.preventDefault(); toast("Saving order..."); }

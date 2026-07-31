@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useRef } from "react";
+import { memo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Film, Tv, Trash2, X } from "lucide-react";
 import {
@@ -52,7 +52,9 @@ type Props = {
   onRemoved: (id: string) => void;
 };
 
-export function MediaRow({ item, onRemoved }: Props) {
+// Memoised: the library list renders hundreds of these and unrelated parent
+// state (search text, filter tabs) must not re-render the whole list.
+function MediaRowBase({ item, onRemoved }: Props) {
   const router = useRouter();
   const [removing, setRemoving] = useState(false);
   const [statusPopover, setStatusPopover] = useState(false);
@@ -182,7 +184,7 @@ export function MediaRow({ item, onRemoved }: Props) {
     <div className="flex items-start gap-3 rounded-lg border border-border bg-card px-3 py-2.5 transition-colors hover:bg-card/80 md:items-center">
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
-        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+        className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]"
       >
         {m.poster_path ? (
           <Image
@@ -459,3 +461,5 @@ export function MediaRow({ item, onRemoved }: Props) {
     </div>
   );
 }
+
+export const MediaRow = memo(MediaRowBase);

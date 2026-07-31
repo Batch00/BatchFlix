@@ -85,7 +85,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
       {/* Poster */}
       <Link
         href={`/media/${m.media_type}/${m.tmdb_id}`}
-        className="relative h-[72px] w-12 flex-shrink-0 overflow-hidden rounded-md"
+        className="relative h-[72px] w-12 flex-shrink-0 overflow-hidden rounded-md bg-[#1f1f1f]"
         onClick={(e) => { if (isDragging) e.preventDefault(); }}
       >
         {m.poster_path ? (

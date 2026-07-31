@@ -89,7 +89,8 @@ async function fetchTMDB(
 async function fetchCollection(id: number): Promise<TMDBCollection | null> {
   const res = await fetch(`https://api.themoviedb.org/3/collection/${id}`, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
-    next: { revalidate: 3600 },
+    // Collection membership changes only when a new entry ships
+    next: { revalidate: 86400 },
   });
   if (!res.ok) return null;
   return res.json();
@@ -189,26 +190,27 @@ async function MediaDetailData({
       ? (tmdbData as TMDBMovieDetail).belongs_to_collection?.id ?? null
       : null;
 
-  const [userMedia, collection] = await Promise.all([
+  // The library map does not depend on userMedia or the collection, so fetch
+  // all three together instead of chaining them.
+  const [userMedia, collection, libResult] = await Promise.all([
     userId && mediaItem
       ? getUserMediaByTmdbId(supabase, userId, normalized.tmdb_id, mediaType)
       : null,
     collectionId ? fetchCollection(collectionId) : null,
+    userId
+      ? supabase
+          .schema("batchflix")
+          .from("user_media")
+          .select("status, media_items(tmdb_id, media_type)")
+          .eq("user_id", userId)
+      : null,
   ]);
 
   const userLibraryMap: Record<string, string> = {};
-  if (userId) {
-    const { data: libRows } = await supabase
-      .schema("batchflix")
-      .from("user_media")
-      .select("status, media_items(tmdb_id, media_type)")
-      .eq("user_id", userId);
-
-    for (const row of (libRows ?? []) as unknown as LibMapRow[]) {
-      const mi = row.media_items;
-      if (mi) {
-        userLibraryMap[`${mi.media_type}:${mi.tmdb_id}`] = row.status;
-      }
+  for (const row of (libResult?.data ?? []) as unknown as LibMapRow[]) {
+    const mi = row.media_items;
+    if (mi) {
+      userLibraryMap[`${mi.media_type}:${mi.tmdb_id}`] = row.status;
     }
   }
 
@@ -419,7 +421,7 @@ async function MediaDetailData({
         {/* Poster + details row */}
         <div className="flex flex-col items-center gap-6 md:flex-row md:items-start">
           {/* Poster */}
-          <div className="relative -mt-16 h-[210px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg shadow-xl sm:-mt-20 sm:h-[240px] sm:w-[160px] md:-mt-24 md:h-[270px] md:w-[180px]">
+          <div className="relative -mt-16 h-[210px] w-[140px] flex-shrink-0 overflow-hidden rounded-lg bg-[#1f1f1f] shadow-xl sm:-mt-20 sm:h-[240px] sm:w-[160px] md:-mt-24 md:h-[270px] md:w-[180px]">
             {posterPath ? (
               <Image
                 src={`https://image.tmdb.org/t/p/w500${posterPath}`}
@@ -428,6 +430,7 @@ async function MediaDetailData({
                 unoptimized
                 className="object-cover"
                 sizes="180px"
+                priority
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-secondary">

@@ -20,7 +20,8 @@ type TMDBPageResult = {
 async function fetchTMDB(path: string): Promise<TMDBPageResult> {
   const res = await fetch(`https://api.themoviedb.org/3${path}`, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
-    next: { revalidate: 3600 },
+    // Trending and discover rows shift at most daily
+    next: { revalidate: 1800 },
   });
   if (!res.ok) return { results: [] };
   return res.json();

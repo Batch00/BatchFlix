@@ -32,7 +32,7 @@ export function SearchResultRow({
         highlighted ? "bg-[#1a1a1a]" : "hover:bg-[#1a1a1a]"
       )}
     >
-      <div className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded">
+      <div className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]">
         {result.poster_path ? (
           <Image
             src={`https://image.tmdb.org/t/p/w185${result.poster_path}`}

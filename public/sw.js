@@ -1,5 +1,9 @@
-const CACHE_NAME = "batchflix-v1";
-const SHELL_URLS = ["/", "/library", "/lists", "/stats"];
+const CACHE_NAME = "batchflix-v2";
+// Only the unauthenticated entry point is precached. Precaching /library,
+// /lists and /stats fetched them without a session, so the cache could end up
+// holding an auth redirect instead of the real page. Authenticated pages are
+// cached at runtime once they have actually been loaded by a signed-in user.
+const SHELL_URLS = ["/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -53,8 +57,18 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        // Only store real, same-origin page responses. Caching redirects (an
+        // expired session bouncing to /auth/login) or error pages would pin
+        // them as the offline version of a route the user can actually see.
+        const cacheable =
+          request.method === "GET" &&
+          response.ok &&
+          !response.redirected &&
+          response.type === "basic";
+        if (cacheable) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
         return response;
       })
       .catch(() => caches.match(request))

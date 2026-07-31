@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   LayoutGrid,
@@ -251,9 +251,11 @@ export function LibraryContent({ initialItems }: Props) {
     syncFilters({ status, mediaType, sort, newSeason: next });
   }
 
-  function handleRemoved(id: string) {
+  // Stable identity so the memoised MediaRow does not re-render on every
+  // keystroke in the search box.
+  const handleRemoved = useCallback((id: string) => {
     setItems((prev) => prev.filter((item) => item.id !== id));
-  }
+  }, []);
 
   // All filtering and sorting happens client-side, so filter switches are instant.
   const filteredItems = useMemo(() => {

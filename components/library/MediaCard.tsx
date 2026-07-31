@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv } from "lucide-react";
@@ -6,7 +7,9 @@ import { StatusBadge } from "@/components/media/StatusBadge";
 import { CardBadges } from "@/components/media/CardBadges";
 import type { UserMediaRow } from "@/lib/queries/library";
 
-export function MediaCard({ item }: { item: UserMediaRow }) {
+// Memoised: the library grid renders hundreds of these and unrelated parent
+// state (search text, filter tabs) must not re-render the whole grid.
+function MediaCardBase({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
   const watched = item.watchedEpisodes ?? 0;
@@ -20,7 +23,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
       href={`/media/${m.media_type}/${m.tmdb_id}`}
       className="group relative overflow-hidden rounded-lg border border-border bg-card transition-transform duration-150 hover:scale-[1.02]"
     >
-      <div className="relative aspect-[2/3] w-full overflow-hidden">
+      <div className="relative aspect-[2/3] w-full overflow-hidden bg-[#1f1f1f]">
         {m.poster_path ? (
           <Image
             src={`https://image.tmdb.org/t/p/w185${m.poster_path}`}
@@ -67,3 +70,5 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
     </Link>
   );
 }
+
+export const MediaCard = memo(MediaCardBase);

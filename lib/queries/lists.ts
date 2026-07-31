@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { MEDIA_ITEM_CARD_COLUMNS } from "./library";
 import type { MediaItemRow } from "./library";
 
 export type ListRule = {
@@ -128,7 +129,7 @@ export async function getListById(
         media_id,
         position,
         added_at,
-        media_items (*)
+        media_items (${MEDIA_ITEM_CARD_COLUMNS})
       )
     `
     )

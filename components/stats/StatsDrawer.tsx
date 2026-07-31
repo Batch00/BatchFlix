@@ -273,7 +273,7 @@ function ListView({ items, onClose }: { items: StatsItem[]; onClose: () => void 
             onClick={onClose}
             className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-secondary/50"
           >
-            <div className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded">
+            <div className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]">
               {item.poster_path ? (
                 <Image
                   src={`https://image.tmdb.org/t/p/w92${item.poster_path}`}

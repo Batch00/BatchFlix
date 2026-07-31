@@ -9,6 +9,10 @@ import { Toaster } from "sonner";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  // Matches the next/font default, stated explicitly so it survives edits.
+  // No weight list: this loads the variable font, so there are no unused
+  // static weights to trim.
+  display: "swap",
 });
 
 export const metadata: Metadata = {

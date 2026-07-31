@@ -147,15 +147,17 @@ export async function PATCH(request: NextRequest) {
             );
           }
 
-          if (matches) {
-            await supabase
-              .schema("batchflix")
-              .from("list_items")
-              .delete()
-              .eq("list_id", lr.id as string)
-              .eq("media_id", mediaId);
-            removedFromLists.push(lr.id as string);
-          }
+          if (matches) removedFromLists.push(lr.id as string);
+        }
+
+        // One delete for every matching list rather than one per list
+        if (removedFromLists.length > 0) {
+          await supabase
+            .schema("batchflix")
+            .from("list_items")
+            .delete()
+            .in("list_id", removedFromLists)
+            .eq("media_id", mediaId);
         }
       }
     }

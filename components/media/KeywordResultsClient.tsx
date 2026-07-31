@@ -236,7 +236,7 @@ export function KeywordResultsClient({
               >
                 <Link
                   href={`/media/${item.media_type}/${item.id}`}
-                  className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded"
+                  className="relative h-[60px] w-10 flex-shrink-0 overflow-hidden rounded bg-[#1f1f1f]"
                 >
                   {item.poster_path ? (
                     <Image

@@ -32,13 +32,22 @@ export async function PATCH(req: NextRequest) {
 
   const { listIds } = parsed.data;
 
-  for (let i = 0; i < listIds.length; i++) {
-    await supabase
-      .schema("batchflix")
-      .from("lists")
-      .update({ position: i })
-      .eq("id", listIds[i])
-      .eq("user_id", user.id);
+  // One UPDATE per list, but issued concurrently rather than in series. A
+  // single upsert would need every NOT NULL column of lists round-tripped,
+  // which risks clobbering concurrent edits for no real gain at this row count.
+  const results = await Promise.all(
+    listIds.map((listId, i) =>
+      supabase
+        .schema("batchflix")
+        .from("lists")
+        .update({ position: i })
+        .eq("id", listId)
+        .eq("user_id", user.id)
+    )
+  );
+
+  if (results.some((r) => r.error)) {
+    return NextResponse.json({ error: "Failed to update positions" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

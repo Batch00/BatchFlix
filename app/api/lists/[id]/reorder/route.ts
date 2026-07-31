@@ -51,13 +51,34 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  for (const item of parsed.data.items) {
+  // Reordering a large list used to issue one UPDATE per item in series --
+  // 400 sequential round trips for a 400 item list. Read the rows once, then
+  // write every new position in a single upsert.
+  const positions = new Map(parsed.data.items.map((i) => [i.id, i.position]));
+
+  const { data: existing, error: readError } = await supabase
+    .schema("batchflix")
+    .from("list_items")
+    .select("id, list_id, media_id")
+    .eq("list_id", id)
+    .in("id", [...positions.keys()]);
+
+  if (readError) {
+    return NextResponse.json({ error: "Failed to read list items" }, { status: 500 });
+  }
+
+  const rows = (existing ?? []).map((row) => ({
+    id: row.id as string,
+    list_id: row.list_id as string,
+    media_id: row.media_id as string,
+    position: positions.get(row.id as string) ?? 0,
+  }));
+
+  if (rows.length > 0) {
     const { error } = await supabase
       .schema("batchflix")
       .from("list_items")
-      .update({ position: item.position })
-      .eq("id", item.id)
-      .eq("list_id", id);
+      .upsert(rows, { onConflict: "id" });
 
     if (error) {
       return NextResponse.json({ error: "Failed to update positions" }, { status: 500 });

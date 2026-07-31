@@ -1,33 +1,37 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+/**
+ * Only the media_items columns the card and row surfaces actually render.
+ * Deliberately excludes overview (long text), backdrop_path, runtime, genres
+ * and director: fetching those across a whole library is pure wire cost.
+ * Queries that do need them (stats, year in review) select them explicitly.
+ */
+export const MEDIA_ITEM_CARD_COLUMNS =
+  "id, tmdb_id, media_type, title, poster_path, release_date, total_episodes";
+
 export type MediaItemRow = {
   id: string;
   tmdb_id: number;
   media_type: "movie" | "tv";
   title: string;
   poster_path: string | null;
-  backdrop_path: string | null;
   release_date: string | null;
-  runtime: number | null;
-  genres: Array<{ id: number; name: string }>;
-  overview: string | null;
-  director: string | null;
   total_episodes: number | null;
-  created_at: string;
-  updated_at: string;
 };
 
 export type UserMediaRow = {
   id: string;
-  user_id: string;
   media_id: string;
   status: "watched" | "watching" | "watchlist";
   rating: number | null;
   watched_date: string | null;
-  notes: string | null;
-  is_favorite: boolean;
   created_at: string;
-  updated_at: string;
+  // Selected only by the single-item queries that need them, not by the
+  // full-library list query.
+  user_id?: string;
+  notes?: string | null;
+  is_favorite?: boolean;
+  updated_at?: string;
   media_items: MediaItemRow;
   watchedEpisodes?: number;
 };
@@ -50,7 +54,9 @@ export async function getUserLibrary(
   let query = supabase
     .schema("batchflix")
     .from("user_media")
-    .select("*, media_items(*)")
+    .select(
+      `id, media_id, status, rating, watched_date, created_at, media_items(${MEDIA_ITEM_CARD_COLUMNS})`
+    )
     .eq("user_id", userId);
 
   if (status) {
@@ -72,7 +78,8 @@ export async function getUserLibrary(
   const { data, error } = await query;
   if (error) throw error;
 
-  let rows = (data ?? []) as UserMediaRow[];
+  // PostgREST types a to-one embed as an array; at runtime it is a single row.
+  let rows = (data ?? []) as unknown as UserMediaRow[];
 
   // Filter by media type in JS -- PostgREST embedded resource filters can
   // return null media_items when the embedded join doesn't match, so we filter
@@ -128,7 +135,9 @@ export async function getUserMediaItem(
   const { data, error } = await supabase
     .schema("batchflix")
     .from("user_media")
-    .select("*, media_items(*)")
+    .select(
+      `id, user_id, media_id, status, rating, watched_date, notes, is_favorite, created_at, updated_at, media_items(${MEDIA_ITEM_CARD_COLUMNS})`
+    )
     .eq("user_id", userId)
     .eq("media_id", mediaId)
     .maybeSingle();

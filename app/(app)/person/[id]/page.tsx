@@ -22,7 +22,8 @@ async function fetchPerson(id: string): Promise<PersonWithCredits | null> {
     `https://api.themoviedb.org/3/person/${id}?append_to_response=combined_credits`,
     {
       headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
-      next: { revalidate: 3600 },
+      // Biography and filmography effectively never change
+      next: { revalidate: 86400 },
     }
   );
   if (!res.ok) return null;

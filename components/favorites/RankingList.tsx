@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { StarRating } from "@/components/library/StarRating";
+import { CardBadges } from "@/components/media/CardBadges";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { toast } from "@/lib/toast";
 import { handleDemoResponse } from "@/lib/demo";
@@ -119,6 +120,7 @@ function SortableRankingRow({ item, rank, listId, onRemove }: RowProps) {
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">
             {m.media_type === "movie" ? "Movie" : "TV"}
           </span>
+          <CardBadges variant="inline" releaseDate={m.release_date} />
         </div>
         {item.user_media?.rating && item.user_media.rating > 0 && (
           <div className="mt-1">

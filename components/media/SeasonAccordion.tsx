@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { ChevronDown, ChevronUp, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -52,9 +52,31 @@ export function SeasonAccordion({
   userId,
   isShowWatched,
 }: Props) {
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
+  // Open the first aired season that still has unwatched episodes, so a newly
+  // aired season is visible without hunting for it.
+  const firstUnwatchedSeason = (() => {
+    for (const s of seasons) {
+      if (!s.air_date || s.air_date > todayStr) continue;
+      const rows = initialProgress.filter(
+        (r) => r.season_number === s.season_number
+      );
+      if (rows.length === 0) {
+        if (isShowWatched) return s.season_number;
+        continue;
+      }
+      if (rows.filter((r) => r.watched).length < s.episode_count) {
+        return s.season_number;
+      }
+    }
+    return null;
+  })();
+
+  const [expandedSeason, setExpandedSeason] = useState<number | null>(
+    firstUnwatchedSeason
+  );
   const [episodeCache, setEpisodeCache] = useState<Record<number, TMDBEpisode[]>>({});
   const [loadingSeasons, setLoadingSeasons] = useState<Set<number>>(new Set());
   const [progress, setProgress] = useState<Record<string, ProgressState>>(() => {
@@ -89,6 +111,15 @@ export function SeasonAccordion({
       });
     }
   }
+
+  // Load the auto-expanded season's episodes. Deferred so the fetch (and its
+  // loading state) lands after the first paint rather than during the effect.
+  useEffect(() => {
+    if (firstUnwatchedSeason === null) return;
+    const timer = setTimeout(() => void fetchSeason(firstUnwatchedSeason), 0);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstUnwatchedSeason]);
 
   function handleToggleSeason(seasonNumber: number) {
     if (expandedSeason === seasonNumber) {
@@ -149,7 +180,13 @@ export function SeasonAccordion({
     if (!userId) return;
     const episodes = episodeCache[season.season_number];
     if (!episodes) return;
-    const epNumbers = episodes.map((e) => e.episode_number);
+    // Never mark unaired episodes watched. Unmarking may cover everything.
+    const epNumbers = (
+      watched
+        ? episodes.filter((e) => !!e.air_date && e.air_date <= todayStr)
+        : episodes
+    ).map((e) => e.episode_number);
+    if (epNumbers.length === 0) return;
 
     // Optimistic update
     setProgress((p) => {
@@ -202,21 +239,31 @@ export function SeasonAccordion({
           const isExpanded = expandedSeason === season.season_number;
           const episodes = episodeCache[season.season_number] ?? [];
           const isLoading = loadingSeasons.has(season.season_number);
-          const watchedCount = Array.from(
-            { length: season.episode_count },
-            (_, i) => i + 1
-          ).filter((ep) => {
-            const epProg = progress[progressKey(season.season_number, ep)];
-            return epProg ? epProg.watched : isShowWatched;
-          }).length;
+          const seasonIsUpcoming = !!season.air_date && season.air_date > todayStr;
+          const watchedCount = seasonIsUpcoming
+            ? 0
+            : Array.from(
+                { length: season.episode_count },
+                (_, i) => i + 1
+              ).filter((ep) => {
+                const epProg = progress[progressKey(season.season_number, ep)];
+                return epProg ? epProg.watched : isShowWatched;
+              }).length;
           const total = season.episode_count;
           const pct = total > 0 ? (watchedCount / total) * 100 : 0;
-          const seasonIsUpcoming = !!season.air_date && season.air_date > todayStr;
+          const airedCount = episodes.filter(
+            (e) => !!e.air_date && e.air_date <= todayStr
+          ).length;
+          const markAllWatched = watchedCount < total;
+          const markAllDisabled = markAllWatched && airedCount === 0;
 
           return (
             <div
               key={season.season_number}
-              className="rounded-lg border border-border bg-card"
+              className={cn(
+                "rounded-lg border border-border bg-card",
+                seasonIsUpcoming && "opacity-60"
+              )}
             >
               {/* Season header */}
               <div className="flex items-center gap-3 px-4 py-3">
@@ -227,8 +274,22 @@ export function SeasonAccordion({
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-medium text-foreground text-sm">
-                        {season.name}
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span
+                          className={cn(
+                            "truncate text-sm font-medium",
+                            seasonIsUpcoming
+                              ? "text-muted-foreground"
+                              : "text-foreground"
+                          )}
+                        >
+                          {season.name}
+                        </span>
+                        {seasonIsUpcoming && (
+                          <span className="flex-shrink-0 rounded bg-yellow-900/60 px-1 py-0.5 text-[10px] text-yellow-300">
+                            Upcoming
+                          </span>
+                        )}
                       </span>
                       <span className="flex-shrink-0 text-xs text-muted-foreground">
                         {watchedCount} / {total} ep
@@ -256,9 +317,21 @@ export function SeasonAccordion({
                 {userId && isExpanded && episodes.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => void handleMarkAllSeason(season, watchedCount < total)}
-                    title={watchedCount < total ? "Mark all watched" : "Mark all unwatched"}
-                    className="flex-shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                    onClick={() => void handleMarkAllSeason(season, markAllWatched)}
+                    disabled={markAllDisabled}
+                    title={
+                      markAllDisabled
+                        ? "No episodes have aired yet"
+                        : markAllWatched
+                        ? "Mark all watched"
+                        : "Mark all unwatched"
+                    }
+                    className={cn(
+                      "flex-shrink-0 rounded-md p-1.5 text-muted-foreground transition-colors",
+                      markAllDisabled
+                        ? "cursor-not-allowed opacity-40"
+                        : "hover:bg-secondary hover:text-foreground"
+                    )}
                   >
                     <CheckCheck className="h-4 w-4" />
                   </button>
@@ -281,8 +354,11 @@ export function SeasonAccordion({
                       {episodes.map((ep) => {
                         const key = progressKey(season.season_number, ep.episode_number);
                         const epProgress = progress[key];
-                        const isWatched = epProgress ? epProgress.watched : isShowWatched;
-                        const isUpcoming = !!ep.air_date && ep.air_date > todayStr;
+                        const isUpcoming = !ep.air_date || ep.air_date > todayStr;
+                        // An unaired episode is never watched, whatever the show status says
+                        const isWatched = epProgress
+                          ? epProgress.watched
+                          : isShowWatched && !isUpcoming;
 
                         return (
                           <div

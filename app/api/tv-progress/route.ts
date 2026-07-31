@@ -73,5 +73,49 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Recalculate show status from tracked rows only. Comparing against tracked
+  // rows (not media_items.total_episodes) means TMDB adding episodes cannot
+  // shift the status on its own -- only explicit user actions land here.
+  const [{ data: allProgress }, { data: currentMedia }] = await Promise.all([
+    supabase
+      .schema("batchflix")
+      .from("tv_progress")
+      .select("watched")
+      .eq("user_id", user.id)
+      .eq("media_id", mediaId),
+    supabase
+      .schema("batchflix")
+      .from("user_media")
+      .select("status")
+      .eq("user_id", user.id)
+      .eq("media_id", mediaId)
+      .maybeSingle(),
+  ]);
+
+  if (allProgress && allProgress.length > 0) {
+    const totalTracked = allProgress.length;
+    const watchedCount = allProgress.filter((r) => r.watched).length;
+    const currentStatus = (currentMedia as { status?: string } | null)?.status;
+
+    let newStatus: string | null = null;
+
+    if (watchedCount === totalTracked) {
+      newStatus = "watched";
+    } else if (watchedCount > 0) {
+      newStatus = "watching";
+    }
+    // watchedCount === 0: leave status alone, the user may have set it deliberately
+
+    if (newStatus !== null && newStatus !== currentStatus) {
+      await supabase
+        .schema("batchflix")
+        .from("user_media")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("user_id", user.id)
+        .eq("media_id", mediaId);
+    }
+  }
+
   return NextResponse.json(data);
 }

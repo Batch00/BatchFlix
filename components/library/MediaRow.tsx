@@ -22,6 +22,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { StarRating } from "./StarRating";
+import { CardBadges } from "@/components/media/CardBadges";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
@@ -67,11 +68,6 @@ export function MediaRow({ item, onRemoved }: Props) {
 
   const { media_items: m } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
-  const isUpcoming = (() => {
-    if (!m.release_date) return false
-    const [yr, mo, dy] = m.release_date.split('-')
-    return new Date(+yr, +mo - 1, +dy) > new Date()
-  })()
 
   function formatDate(d: string) {
     const [yr, mo, dy] = d.split("T")[0].split("-");
@@ -258,15 +254,11 @@ export function MediaRow({ item, onRemoved }: Props) {
           >
             {STATUS_LABELS[rowStatus]}
           </span>
-          {isUpcoming ? (
-            <span className="rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[10px] font-bold text-black">
-              UPCOMING
-            </span>
-          ) : hasNewContent && (
-            <span className="rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
-              New Season
-            </span>
-          )}
+          <CardBadges
+            variant="inline"
+            releaseDate={m.release_date}
+            hasNewSeason={hasNewContent}
+          />
         </div>
 
         {(rowRating > 0 || rowDate) && (
@@ -289,15 +281,11 @@ export function MediaRow({ item, onRemoved }: Props) {
       <Link href={`/media/${m.media_type}/${m.tmdb_id}`} className="hidden min-w-0 flex-1 md:block">
         <div className="flex items-center gap-1.5">
           <p className="truncate text-sm font-medium text-foreground">{m.title}</p>
-          {isUpcoming ? (
-            <span className="flex-shrink-0 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[10px] font-bold text-black">
-              UPCOMING
-            </span>
-          ) : hasNewContent && (
-            <span className="flex-shrink-0 rounded-full border border-yellow-700/40 bg-yellow-900/60 px-1.5 py-0.5 text-[10px] text-yellow-300">
-              New Season
-            </span>
-          )}
+          <CardBadges
+            variant="inline"
+            releaseDate={m.release_date}
+            hasNewSeason={hasNewContent}
+          />
         </div>
         <div className="mt-0.5 flex items-center gap-2">
           {year && <span className="text-xs text-muted-foreground">{year}</span>}

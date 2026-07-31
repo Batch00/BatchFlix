@@ -38,6 +38,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { StarRating } from "@/components/library/StarRating";
+import { CardBadges } from "@/components/media/CardBadges";
 import { useSearchContext } from "@/components/search/SearchProvider";
 import { CreateListDialog } from "./CreateListDialog";
 import { EditListDialog } from "./EditListDialog";
@@ -139,6 +140,9 @@ function SortableItem({ item, isSaving, onRemove }: SortableItemProps) {
               )}
             </div>
           )}
+
+          {/* Offset below the remove button so the two never overlap */}
+          <CardBadges releaseDate={m.release_date} className="top-8" />
 
           {item.user_media && (() => {
             const cfg = GRID_STATUS_BADGE[item.user_media.status] ?? GRID_STATUS_BADGE.watchlist;
@@ -264,6 +268,7 @@ function SortableListRowItem({ item, isSaving, onRemove }: SortableListRowItemPr
           <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] capitalize text-muted-foreground">
             {m.media_type}
           </span>
+          <CardBadges variant="inline" releaseDate={m.release_date} />
         </div>
       </Link>
 
@@ -333,7 +338,7 @@ function SortableSublistChip({
         transition,
         opacity: isDragging ? 0.5 : 1,
       }}
-      className="group relative"
+      className="group relative w-full"
     >
       <Link
         href={`/lists/${sub.id}`}
@@ -341,8 +346,8 @@ function SortableSublistChip({
           if (isDragging) e.preventDefault();
         }}
         className={cn(
-          "flex items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-2 text-sm transition-colors hover:border-[#2563EB]/40",
-          isProtected ? "pr-3" : "pr-12"
+          "flex w-full items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-2 text-sm transition-colors hover:border-[#2563EB]/40",
+          isProtected ? "pr-3" : "pr-16"
         )}
       >
         <span
@@ -350,7 +355,7 @@ function SortableSublistChip({
           {...listeners}
           aria-label="Drag to reorder"
           onClick={(e) => e.preventDefault()}
-          className="cursor-grab touch-none text-muted-foreground/60 active:cursor-grabbing"
+          className="flex-shrink-0 cursor-grab touch-none text-muted-foreground/60 active:cursor-grabbing"
         >
           <GripVertical className="h-3 w-3" />
         </span>
@@ -360,11 +365,15 @@ function SortableSublistChip({
             COLOR_BG[sub.color] ?? "bg-blue-600"
           )}
         />
-        <span className="font-medium text-foreground">{sub.name}</span>
-        <span className="text-muted-foreground/70">{sub.item_count}</span>
+        <span className="min-w-0 flex-1 truncate font-medium text-foreground">
+          {sub.name}
+        </span>
+        <span className="flex-shrink-0 text-muted-foreground/70">
+          {sub.item_count}
+        </span>
       </Link>
       {!isProtected && (
-        <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+        <div className="absolute right-1.5 top-1/2 flex -translate-y-1/2 items-center gap-0.5 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
           <button
             type="button"
             aria-label={`Edit ${sub.name}`}
@@ -372,7 +381,7 @@ function SortableSublistChip({
               e.preventDefault();
               onEdit(sub);
             }}
-            className="rounded-full p-0.5 text-muted-foreground hover:text-foreground"
+            className="rounded-full p-1 text-foreground/70 hover:bg-secondary hover:text-foreground"
           >
             <Pencil className="h-3 w-3" />
           </button>
@@ -383,7 +392,7 @@ function SortableSublistChip({
               e.preventDefault();
               onDelete(sub);
             }}
-            className="rounded-full p-0.5 text-muted-foreground hover:text-destructive"
+            className="rounded-full p-1 text-foreground/70 hover:bg-secondary hover:text-destructive"
           >
             <X className="h-3 w-3" />
           </button>
@@ -715,7 +724,7 @@ export function ListDetailContent({ list }: Props) {
               items={sublists.map((s) => s.id)}
               strategy={rectSortingStrategy}
             >
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 {sublists.map((sub) => (
                   <SortableSublistChip
                     key={sub.id}
@@ -728,7 +737,7 @@ export function ListDetailContent({ list }: Props) {
                 <button
                   type="button"
                   onClick={() => setCreateSublistOpen(true)}
-                  className="flex items-center gap-1.5 rounded-full border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-[#1f1f1f] px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-[#2563EB]/40 hover:text-foreground"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   New sublist

@@ -29,6 +29,7 @@ import { RecommendationsSection } from "@/components/media/RecommendationsSectio
 import { CollectionSection } from "@/components/media/CollectionSection";
 import { SeasonAccordion } from "@/components/media/SeasonAccordion";
 import { NewSeasonBanner } from "@/components/media/NewSeasonBanner";
+import { todayLocalDate, purgeUnairedProgress } from "@/lib/tmdb-episodes";
 
 type Params = Promise<{ type: string; id: string }>;
 
@@ -285,6 +286,34 @@ async function MediaDetailData({
       tvProgress = (data ?? []) as TVProgressRow[];
     } catch {
       // tv_progress table may not exist yet
+    }
+
+    // Self-heal: progress written before the air-date guard existed can cover
+    // seasons that have not aired, which suppresses new season detection.
+    // Drop those rows server-side so the repair happens as the user browses.
+    const today = todayLocalDate();
+    // Only seasons with a known future air date. A missing air_date is
+    // ambiguous and deleting real history over it is not worth the risk.
+    const unairedSeasons = new Set(
+      tvSeasons
+        .filter((s) => !!s.air_date && s.air_date > today)
+        .map((s) => s.season_number)
+    );
+    const staleSeasons = [
+      ...new Set(
+        tvProgress
+          .filter((r) => unairedSeasons.has(r.season_number))
+          .map((r) => r.season_number)
+      ),
+    ];
+    if (staleSeasons.length > 0) {
+      const removed = await purgeUnairedProgress(userId, mediaItem.id, staleSeasons);
+      console.log("[unaired-progress-cleanup]", {
+        mediaId: mediaItem.id,
+        seasons: staleSeasons,
+        removed,
+      });
+      tvProgress = tvProgress.filter((r) => !unairedSeasons.has(r.season_number));
     }
   }
 

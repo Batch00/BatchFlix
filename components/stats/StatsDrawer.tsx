@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { CardBadges } from "@/components/media/CardBadges";
 import type { StatsItem } from "@/lib/queries/stats";
 
 type MediaFilter = "all" | "movie" | "tv";
@@ -239,6 +240,8 @@ function GridView({ items, onClose }: { items: StatsItem[]; onClose: () => void 
               {item.media_type === "movie" ? "Movie" : "TV"}
             </span>
 
+            <CardBadges releaseDate={item.release_date} />
+
             {/* Status badge */}
             <span
               className={cn(
@@ -314,6 +317,7 @@ function ListView({ items, onClose }: { items: StatsItem[]; onClose: () => void 
                 >
                   {badge.label}
                 </span>
+                <CardBadges variant="inline" releaseDate={item.release_date} />
               </div>
               {item.rating !== null && (
                 <div className="mt-0.5 flex items-center gap-0.5">

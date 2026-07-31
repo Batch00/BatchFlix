@@ -76,13 +76,11 @@ export async function POST(request: NextRequest) {
     let newStatus: string | null = null;
 
     if (watchedCount === totalTracked) {
-      // All tracked episodes watched -- safe to set watched
       newStatus = "watched";
-    } else if (currentStatus !== "watched") {
-      // Only update non-watched shows; never auto-downgrade a watched show
-      newStatus = watchedCount > 0 ? "watching" : "watchlist";
+    } else if (watchedCount > 0) {
+      newStatus = "watching";
     }
-    // currentStatus === "watched" with unfinished tracked episodes: skip, no downgrade
+    // watchedCount === 0: leave status alone, the user may have set it deliberately
 
     if (newStatus !== null && newStatus !== currentStatus) {
       await supabase

@@ -1,5 +1,16 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
+/** Today as a local YYYY-MM-DD string, comparable against TMDB air_date values. */
+export function todayLocalDate(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** An air_date has aired when it is present and not in the future. */
+export function hasAired(airDate: string | null | undefined, today: string): boolean {
+  return !!airDate && airDate <= today;
+}
+
 export async function markAllEpisodesWatched(
   userId: string,
   mediaId: string,
@@ -7,7 +18,8 @@ export async function markAllEpisodesWatched(
   watchedDate: string | null
 ): Promise<void> {
   console.log("[markAllEpisodesWatched] called", { userId, mediaId, tmdbId });
-  const dateStr = watchedDate ?? new Date().toISOString().slice(0, 10);
+  const today = todayLocalDate();
+  const dateStr = watchedDate ?? today;
 
   const showRes = await fetch(`https://api.themoviedb.org/3/tv/${tmdbId}`, {
     headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
@@ -15,9 +27,13 @@ export async function markAllEpisodesWatched(
   if (!showRes.ok) return;
 
   const show = (await showRes.json()) as {
-    seasons?: Array<{ season_number: number }>;
+    seasons?: Array<{ season_number: number; air_date: string | null }>;
   };
-  const seasons = (show.seasons ?? []).filter((s) => s.season_number > 0);
+  // Skip specials and any season that has not aired yet -- unaired episodes must
+  // never be marked watched, otherwise new season detection is suppressed.
+  const seasons = (show.seasons ?? []).filter(
+    (s) => s.season_number > 0 && hasAired(s.air_date, today)
+  );
   if (seasons.length === 0) return;
 
   const admin = createAdminClient();
@@ -32,9 +48,12 @@ export async function markAllEpisodesWatched(
       if (!epRes.ok) return;
 
       const epData = (await epRes.json()) as {
-        episodes?: Array<{ episode_number: number }>;
+        episodes?: Array<{ episode_number: number; air_date: string | null }>;
       };
-      const episodes = epData.episodes ?? [];
+      // Within an aired season, individual episodes may still be unaired.
+      const episodes = (epData.episodes ?? []).filter((ep) =>
+        hasAired(ep.air_date, today)
+      );
       if (episodes.length === 0) return;
 
       const rows = episodes.map((ep) => ({
@@ -55,4 +74,29 @@ export async function markAllEpisodesWatched(
         });
     })
   );
+}
+
+/**
+ * Delete tv_progress rows belonging to seasons that have not aired yet.
+ * Repairs data written before the air-date guard existed. Returns rows removed.
+ */
+export async function purgeUnairedProgress(
+  userId: string,
+  mediaId: string,
+  unairedSeasonNumbers: number[]
+): Promise<number> {
+  if (unairedSeasonNumbers.length === 0) return 0;
+
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .schema("batchflix")
+    .from("tv_progress")
+    .delete()
+    .eq("user_id", userId)
+    .eq("media_id", mediaId)
+    .in("season_number", unairedSeasonNumbers)
+    .select("id");
+
+  if (error) return 0;
+  return data?.length ?? 0;
 }

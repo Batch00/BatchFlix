@@ -10,6 +10,7 @@ import { useListPicker } from "@/components/providers/ListPickerProvider";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { MediaTypeBadge } from "@/components/media/MediaTypeBadge";
 import { StatusBadge } from "@/components/media/StatusBadge";
+import { CardBadges } from "@/components/media/CardBadges";
 
 const VIEW_PREF_KEY = "batchflix_view_preference";
 
@@ -158,11 +159,6 @@ export function KeywordResultsClient({
             const entry = libraryMap[key] ?? null;
             const title = item.title ?? item.name ?? "Unknown";
             const dateStr = item.release_date ?? item.first_air_date
-            const isUpcoming = (() => {
-              if (!dateStr) return false
-              const [y, m, d] = dateStr.split('-')
-              return new Date(+y, +m - 1, +d) > new Date()
-            })()
             const formattedDate = (() => {
               if (!dateStr) return null
               const [y, m, d] = dateStr.split('-')
@@ -194,11 +190,7 @@ export function KeywordResultsClient({
 
                     <MediaTypeBadge mediaType={item.media_type} />
 
-                    {isUpcoming && (
-                      <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[9px] font-bold text-black">
-                        UPCOMING
-                      </div>
-                    )}
+                    <CardBadges releaseDate={dateStr} />
 
                     {!entry && (
                       <button
@@ -285,6 +277,10 @@ export function KeywordResultsClient({
                     >
                       {item.media_type === "movie" ? "Movie" : "TV"}
                     </span>
+                    <CardBadges
+                      variant="inline"
+                      releaseDate={item.release_date ?? item.first_air_date}
+                    />
                   </div>
                 </Link>
 

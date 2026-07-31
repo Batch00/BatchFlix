@@ -3,16 +3,12 @@ import Link from "next/link";
 import { Film, Tv } from "lucide-react";
 import { MediaTypeBadge } from "@/components/media/MediaTypeBadge";
 import { StatusBadge } from "@/components/media/StatusBadge";
+import { CardBadges } from "@/components/media/CardBadges";
 import type { UserMediaRow } from "@/lib/queries/library";
 
 export function MediaCard({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
-  const isUpcoming = (() => {
-    if (!m.release_date) return false
-    const [y, mo, d] = m.release_date.split('-')
-    return new Date(+y, +mo - 1, +d) > new Date()
-  })()
   const watched = item.watchedEpisodes ?? 0;
   const total = m.total_episodes ?? 0;
   const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
@@ -46,15 +42,7 @@ export function MediaCard({ item }: { item: UserMediaRow }) {
 
         <MediaTypeBadge mediaType={m.media_type} />
 
-        {isUpcoming ? (
-          <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500/90 px-1.5 py-0.5 text-[9px] font-bold text-black">
-            UPCOMING
-          </div>
-        ) : hasNewContent && (
-          <div className="absolute right-1 top-1 z-10 rounded-full bg-yellow-500 px-1.5 py-0.5 text-[9px] font-bold text-black">
-            NEW
-          </div>
-        )}
+        <CardBadges releaseDate={m.release_date} hasNewSeason={hasNewContent} />
 
         <StatusBadge status={status} />
 

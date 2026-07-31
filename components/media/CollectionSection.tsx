@@ -28,6 +28,9 @@ export function CollectionSection({
   const router = useRouter();
   const { openListPicker } = useListPicker();
   const [libraryMap, setLibraryMap] = useState(initialMap);
+  // Declared with the other hooks: it used to sit below the early return,
+  // so the hook order changed with the number of collection parts.
+  const [overviewExpanded, setOverviewExpanded] = useState(false);
 
   const parts = [...collection.parts].sort((a, b) =>
     (a.release_date ?? "").localeCompare(b.release_date ?? "")
@@ -57,7 +60,6 @@ export function CollectionSection({
     }
   }
 
-  const [overviewExpanded, setOverviewExpanded] = useState(false);
   const truncateOverview =
     !overviewExpanded && (collection.overview?.length ?? 0) > 300;
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { ChevronDown, ChevronUp, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -55,28 +55,8 @@ export function SeasonAccordion({
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  // Open the first aired season that still has unwatched episodes, so a newly
-  // aired season is visible without hunting for it.
-  const firstUnwatchedSeason = (() => {
-    for (const s of seasons) {
-      if (!s.air_date || s.air_date > todayStr) continue;
-      const rows = initialProgress.filter(
-        (r) => r.season_number === s.season_number
-      );
-      if (rows.length === 0) {
-        if (isShowWatched) return s.season_number;
-        continue;
-      }
-      if (rows.filter((r) => r.watched).length < s.episode_count) {
-        return s.season_number;
-      }
-    }
-    return null;
-  })();
-
-  const [expandedSeason, setExpandedSeason] = useState<number | null>(
-    firstUnwatchedSeason
-  );
+  // Every season starts collapsed; episodes load on first expand.
+  const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
   const [episodeCache, setEpisodeCache] = useState<Record<number, TMDBEpisode[]>>({});
   const [loadingSeasons, setLoadingSeasons] = useState<Set<number>>(new Set());
   const [progress, setProgress] = useState<Record<string, ProgressState>>(() => {
@@ -111,15 +91,6 @@ export function SeasonAccordion({
       });
     }
   }
-
-  // Load the auto-expanded season's episodes. Deferred so the fetch (and its
-  // loading state) lands after the first paint rather than during the effect.
-  useEffect(() => {
-    if (firstUnwatchedSeason === null) return;
-    const timer = setTimeout(() => void fetchSeason(firstUnwatchedSeason), 0);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firstUnwatchedSeason]);
 
   function handleToggleSeason(seasonNumber: number) {
     if (expandedSeason === seasonNumber) {

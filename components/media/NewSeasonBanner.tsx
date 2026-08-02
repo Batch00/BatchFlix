@@ -12,9 +12,8 @@ type SeasonWithNewEpisodes = {
 };
 
 type Props = {
-  newSeasons: TMDBSeason[];
+  availableSeasons: TMDBSeason[];
   seasonsWithNewEpisodes: SeasonWithNewEpisodes[];
-  seasonsPreloadedUnwatched: TMDBSeason[];
   showTitle: string;
   tmdbId: number;
   mediaId: string;
@@ -31,19 +30,15 @@ function formatSeasonList(seasons: TMDBSeason[]): string {
 }
 
 export function NewSeasonBanner({
-  newSeasons,
+  availableSeasons,
   seasonsWithNewEpisodes,
-  seasonsPreloadedUnwatched,
   tmdbId,
   mediaId,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  if (newSeasons.length === 0 && seasonsWithNewEpisodes.length === 0 && seasonsPreloadedUnwatched.length === 0) return null;
-
-  // Combine fully-new and preloaded-unwatched seasons for display and API call
-  const availableSeasons = [...newSeasons, ...seasonsPreloadedUnwatched];
+  if (availableSeasons.length === 0 && seasonsWithNewEpisodes.length === 0) return null;
 
   const allSeasonNumbers = [
     ...availableSeasons.map((s) => s.season_number),

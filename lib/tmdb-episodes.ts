@@ -100,3 +100,29 @@ export async function purgeUnairedProgress(
   if (error) return 0;
   return data?.length ?? 0;
 }
+
+/**
+ * Delete watched rows for a season that first aired after the user marked the
+ * show complete. The season did not exist when they finished the show, so the
+ * rows can only be bulk-mark artifacts. Air date alone cannot tell them apart
+ * from real history any more, now that the season has aired. Returns rows removed.
+ */
+export async function purgeProgressAiredAfterWatched(
+  userId: string,
+  mediaId: string,
+  seasonNumber: number
+): Promise<number> {
+  const admin = createAdminClient();
+  const { data, error } = await admin
+    .schema("batchflix")
+    .from("tv_progress")
+    .delete()
+    .eq("user_id", userId)
+    .eq("media_id", mediaId)
+    .eq("season_number", seasonNumber)
+    .eq("watched", true)
+    .select("id");
+
+  if (error) return 0;
+  return data?.length ?? 0;
+}

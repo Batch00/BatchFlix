@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { todayLocalDate, hasAired } from "@/lib/tmdb-episodes";
 
 const schema = z.object({
   mediaId: z.string().uuid(),
@@ -42,6 +43,7 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+  const today = todayLocalDate();
 
   // Fetch and upsert episodes for each season
   await Promise.all(
@@ -53,9 +55,13 @@ export async function POST(request: NextRequest) {
       if (!res.ok) return;
 
       const data = (await res.json()) as {
-        episodes?: Array<{ episode_number: number }>;
+        episodes?: Array<{ episode_number: number; air_date: string | null }>;
       };
-      const episodes = data.episodes ?? [];
+      // Never write rows for episodes that have not aired, so an unaired season
+      // reaching this route is a no-op rather than a source of stale progress.
+      const episodes = (data.episodes ?? []).filter((ep) =>
+        hasAired(ep.air_date, today)
+      );
       if (episodes.length === 0) return;
 
       const rows = episodes.map((ep) => ({

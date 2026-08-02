@@ -32,6 +32,7 @@ import { NewSeasonBanner } from "@/components/media/NewSeasonBanner";
 import {
   todayLocalDate,
   hasAired,
+  countAiredEpisodes,
   purgeUnairedProgress,
   purgeProgressAiredAfterWatched,
 } from "@/lib/tmdb-episodes";
@@ -282,9 +283,6 @@ async function MediaDetailData({
     rating: number | null;
   };
   let tvProgress: TVProgressRow[] = [];
-  // Whether the user tracked this show at all before the cleanups below ran.
-  // Detection stays off for shows that were never tracked per episode.
-  let hadTrackedProgress = false;
   if (userId && mediaItem && mediaType === "tv") {
     try {
       const { data } = await supabase
@@ -297,7 +295,6 @@ async function MediaDetailData({
     } catch {
       // tv_progress table may not exist yet
     }
-    hadTrackedProgress = tvProgress.length > 0;
 
     // Self-heal: progress written before the air-date guard existed can cover
     // seasons that have not aired, which suppresses new season detection.
@@ -358,29 +355,56 @@ async function MediaDetailData({
   }
 
   // New season detection (TV only, when user has the show as watched).
-  // Judged on watched rows versus TMDB's aired episode count, so stray progress
-  // rows cannot pass a season off as already seen.
+  // Judged on watched rows versus the episodes that have actually aired, so
+  // stray progress rows cannot pass a season off as already seen.
   type NewSeasonWithEpisodes = { season_number: number; newEpisodeCount: number };
   const availableSeasons: typeof tvSeasons = [];
   const seasonsWithNewEpisodes: NewSeasonWithEpisodes[] = [];
+  const upcomingSeasons: typeof tvSeasons = [];
 
-  if (mediaType === "tv" && userMedia?.status === "watched" && hadTrackedProgress) {
+  if (mediaType === "tv" && userMedia?.status === "watched") {
     const watchedBySeason = tvProgress.reduce<Record<number, number>>((acc, row) => {
       if (row.watched) acc[row.season_number] = (acc[row.season_number] ?? 0) + 1;
       return acc;
     }, {});
     const today = todayLocalDate();
+    const showWatchedDate = userMedia.watched_date ?? null;
 
     for (const season of tvSeasons) {
-      if (!hasAired(season.air_date, today)) continue;
-      // Per-episode air dates are not loaded here, so the season's episode
-      // count stands in for the number of episodes that have aired.
-      const airedEpisodeCount = season.episode_count;
+      // TMDB uses a null air date liberally for loosely announced seasons.
+      // Nothing can be said about those, in either direction.
+      if (!season.air_date) continue;
       const watchedCount = watchedBySeason[season.season_number] ?? 0;
+
+      if (!hasAired(season.air_date, today)) {
+        upcomingSeasons.push(season);
+        continue;
+      }
+
+      // The season had already aired when the user marked the show complete,
+      // so that completion covers it. No episode rows means the show predates
+      // episode tracking, not that the season went unwatched.
+      if (showWatchedDate && season.air_date <= showWatchedDate && watchedCount === 0) {
+        continue;
+      }
 
       if (watchedCount === 0) {
         availableSeasons.push(season);
-      } else if (watchedCount < airedEpisodeCount) {
+        continue;
+      }
+      if (watchedCount >= season.episode_count) continue;
+
+      // Only a partially watched season needs per-episode dates: it is the one
+      // case where counting unaired episodes would invent new episodes.
+      const airedEpisodeCount = await countAiredEpisodes(
+        tmdbData.id,
+        season.season_number,
+        today
+      );
+      // Unreadable season, so leave it alone rather than risk a false positive.
+      if (airedEpisodeCount === null) continue;
+
+      if (watchedCount < airedEpisodeCount) {
         seasonsWithNewEpisodes.push({
           season_number: season.season_number,
           newEpisodeCount: airedEpisodeCount - watchedCount,
@@ -667,11 +691,11 @@ async function MediaDetailData({
         </div>
 
         {/* 7. New season banner (TV only, watched shows only) */}
-        {mediaType === "tv" && mediaItem && userMedia?.status === "watched" && (availableSeasons.length > 0 || seasonsWithNewEpisodes.length > 0) && (
+        {mediaType === "tv" && mediaItem && userMedia?.status === "watched" && (availableSeasons.length > 0 || seasonsWithNewEpisodes.length > 0 || upcomingSeasons.length > 0) && (
           <NewSeasonBanner
             availableSeasons={availableSeasons}
             seasonsWithNewEpisodes={seasonsWithNewEpisodes}
-            showTitle={title}
+            upcomingSeasons={upcomingSeasons}
             tmdbId={tmdbData.id}
             mediaId={mediaItem.id}
           />

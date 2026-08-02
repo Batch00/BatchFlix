@@ -11,6 +11,37 @@ export function hasAired(airDate: string | null | undefined, today: string): boo
   return !!airDate && airDate <= today;
 }
 
+/**
+ * Count the episodes of a season that have actually aired. A season's
+ * episode_count includes episodes still to come, so a mid-flight season needs
+ * the per-episode dates. Returns null when the season cannot be read, letting
+ * callers decline to surface it rather than guess.
+ */
+export async function countAiredEpisodes(
+  tmdbId: number,
+  seasonNumber: number,
+  today: string
+): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNumber}`,
+      {
+        headers: { Authorization: `Bearer ${process.env.TMDB_BEARER_TOKEN}` },
+        next: { revalidate: 3600 },
+      }
+    );
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      episodes?: Array<{ air_date: string | null }>;
+    };
+    if (!data.episodes) return null;
+    return data.episodes.filter((ep) => hasAired(ep.air_date, today)).length;
+  } catch {
+    return null;
+  }
+}
+
 export async function markAllEpisodesWatched(
   userId: string,
   mediaId: string,

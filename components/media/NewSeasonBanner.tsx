@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles, CalendarClock, Loader2 } from "lucide-react";
+import { format } from "date-fns";
 import { toast } from "@/lib/toast";
 import type { TMDBSeason } from "@/lib/tmdb";
 
@@ -14,10 +15,16 @@ type SeasonWithNewEpisodes = {
 type Props = {
   availableSeasons: TMDBSeason[];
   seasonsWithNewEpisodes: SeasonWithNewEpisodes[];
-  showTitle: string;
+  upcomingSeasons: TMDBSeason[];
   tmdbId: number;
   mediaId: string;
 };
+
+/** Parse as a local date so the day never shifts across timezones. */
+function formatAirDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-");
+  return format(new Date(+y, +m - 1, +d), "MMM d, yyyy");
+}
 
 function formatSeasonList(seasons: TMDBSeason[]): string {
   if (seasons.length === 0) return "";
@@ -32,13 +39,18 @@ function formatSeasonList(seasons: TMDBSeason[]): string {
 export function NewSeasonBanner({
   availableSeasons,
   seasonsWithNewEpisodes,
+  upcomingSeasons,
   tmdbId,
   mediaId,
 }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
-  if (availableSeasons.length === 0 && seasonsWithNewEpisodes.length === 0) return null;
+  // Only aired seasons can be continued. Upcoming ones are announcement only.
+  const hasWatchableContent =
+    availableSeasons.length > 0 || seasonsWithNewEpisodes.length > 0;
+
+  if (!hasWatchableContent && upcomingSeasons.length === 0) return null;
 
   const allSeasonNumbers = [
     ...availableSeasons.map((s) => s.season_number),
@@ -66,6 +78,32 @@ export function NewSeasonBanner({
     }
   }
 
+  // Nothing to watch yet, so the banner is an announcement rather than a prompt
+  if (!hasWatchableContent) {
+    return (
+      <div className="mt-6 rounded-xl border border-yellow-500/40 bg-[#2a2313] p-4">
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 flex-shrink-0">
+            <CalendarClock className="h-5 w-5 text-yellow-400" />
+          </div>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-foreground">Coming soon</p>
+            <div className="mt-1 flex flex-col gap-0.5">
+              {upcomingSeasons.map((s) =>
+                s.air_date ? (
+                  <p key={s.season_number} className="text-sm text-muted-foreground">
+                    Season {s.season_number} arrives {formatAirDate(s.air_date)}
+                  </p>
+                ) : null
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-6 rounded-xl border border-[#2563EB]/40 bg-[#1a2332] p-4">
       <div className="flex items-start gap-3">
@@ -90,6 +128,16 @@ export function NewSeasonBanner({
                 {s.newEpisodeCount === 1 ? "episode" : "episodes"}
               </p>
             ))}
+            {upcomingSeasons.map((s) =>
+              s.air_date ? (
+                <p
+                  key={s.season_number}
+                  className="text-xs text-muted-foreground/60"
+                >
+                  Season {s.season_number} arrives {formatAirDate(s.air_date)}
+                </p>
+              ) : null
+            )}
           </div>
         </div>
 

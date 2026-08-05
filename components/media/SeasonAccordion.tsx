@@ -29,6 +29,7 @@ type Props = {
   initialProgress: InitialProgressRow[];
   userId: string | null;
   isShowWatched: boolean;
+  showWatchedDate: string | null;
 };
 
 function progressKey(season: number, episode: number) {
@@ -51,6 +52,7 @@ export function SeasonAccordion({
   initialProgress,
   userId,
   isShowWatched,
+  showWatchedDate,
 }: Props) {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
@@ -211,6 +213,14 @@ export function SeasonAccordion({
           const episodes = episodeCache[season.season_number] ?? [];
           const isLoading = loadingSeasons.has(season.season_number);
           const seasonIsUpcoming = !!season.air_date && season.air_date > todayStr;
+          // The show-level watched flag only covers seasons that had already
+          // aired when the user marked it complete. A season that arrived later
+          // was not part of that, so it must not inherit watched episodes.
+          const fallbackWatched =
+            isShowWatched &&
+            !!showWatchedDate &&
+            !!season.air_date &&
+            season.air_date <= showWatchedDate;
           const watchedCount = seasonIsUpcoming
             ? 0
             : Array.from(
@@ -218,7 +228,7 @@ export function SeasonAccordion({
                 (_, i) => i + 1
               ).filter((ep) => {
                 const epProg = progress[progressKey(season.season_number, ep)];
-                return epProg ? epProg.watched : isShowWatched;
+                return epProg ? epProg.watched : fallbackWatched;
               }).length;
           const total = season.episode_count;
           const pct = total > 0 ? (watchedCount / total) * 100 : 0;
@@ -329,7 +339,7 @@ export function SeasonAccordion({
                         // An unaired episode is never watched, whatever the show status says
                         const isWatched = epProgress
                           ? epProgress.watched
-                          : isShowWatched && !isUpcoming;
+                          : fallbackWatched && !isUpcoming;
 
                         return (
                           <div

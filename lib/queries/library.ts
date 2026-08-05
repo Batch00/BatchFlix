@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { SeasonStat } from "@/lib/tmdb-episodes";
+import { todayLocalDate, type SeasonStat } from "@/lib/tmdb-episodes";
 
 /**
  * Only the media_items columns the card and row surfaces actually render.
@@ -37,6 +37,7 @@ export type UserMediaRow = {
   // Aired-episode progress, attached for TV rows only. See episodeProgress.
   watchedEpisodes?: number;
   totalEpisodes?: number;
+  hasUpcomingSeason?: boolean;
 };
 
 /**
@@ -184,6 +185,7 @@ export async function getUserLibrary(
         if (s.season_stats) statsMap[s.id] = s.season_stats;
       }
 
+      const today = todayLocalDate();
       rows = rows.map((r) =>
         r.media_items?.media_type === "tv"
           ? {
@@ -192,6 +194,11 @@ export async function getUserLibrary(
                 r,
                 statsMap[r.media_id],
                 progressMap[r.media_id] ?? {}
+              ),
+              // A known future air date is announced content. Null air dates
+              // stay out, matching new season detection.
+              hasUpcomingSeason: (statsMap[r.media_id] ?? []).some(
+                (s) => !!s.air_date && s.air_date > today
               ),
             }
           : r

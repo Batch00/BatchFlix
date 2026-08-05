@@ -15,6 +15,8 @@ export function isFutureDate(dateStr: string | null | undefined): boolean {
 type Props = {
   /** release_date for movies, first_air_date for TV. */
   releaseDate?: string | null;
+  /** TV with a season whose air date is known and still in the future. */
+  hasUpcomingSeason?: boolean;
   /** Existing hasNewContent logic: tv, watched, tracked episodes < total. */
   hasNewSeason?: boolean;
   /** "overlay" stacks over a poster, "inline" returns bare pills for a row. */
@@ -29,11 +31,14 @@ type Props = {
  */
 export function CardBadges({
   releaseDate,
+  hasUpcomingSeason = false,
   hasNewSeason = false,
   variant = "overlay",
   className,
 }: Props) {
-  const comingSoon = isFutureDate(releaseDate);
+  // A title is coming soon either because it has not premiered at all or
+  // because an already running show has an announced season ahead of it.
+  const comingSoon = isFutureDate(releaseDate) || hasUpcomingSeason;
   if (!comingSoon && !hasNewSeason) return null;
 
   if (variant === "inline") {

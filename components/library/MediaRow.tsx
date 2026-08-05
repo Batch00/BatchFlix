@@ -259,6 +259,7 @@ function MediaRowBase({ item, onRemoved }: Props) {
           <CardBadges
             variant="inline"
             releaseDate={m.release_date}
+            hasUpcomingSeason={item.hasUpcomingSeason}
             hasNewSeason={hasNewContent}
           />
         </div>
@@ -286,6 +287,7 @@ function MediaRowBase({ item, onRemoved }: Props) {
           <CardBadges
             variant="inline"
             releaseDate={m.release_date}
+            hasUpcomingSeason={item.hasUpcomingSeason}
             hasNewSeason={hasNewContent}
           />
         </div>

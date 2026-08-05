@@ -45,7 +45,11 @@ function MediaCardBase({ item }: { item: UserMediaRow }) {
 
         <MediaTypeBadge mediaType={m.media_type} />
 
-        <CardBadges releaseDate={m.release_date} hasNewSeason={hasNewContent} />
+        <CardBadges
+          releaseDate={m.release_date}
+          hasUpcomingSeason={item.hasUpcomingSeason}
+          hasNewSeason={hasNewContent}
+        />
 
         <StatusBadge status={status} />
 

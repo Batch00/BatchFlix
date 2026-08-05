@@ -11,6 +11,7 @@ import {
   Bookmark,
   Search,
   Sparkles,
+  CalendarClock,
   X,
 } from "lucide-react";
 import {
@@ -24,6 +25,7 @@ import { MediaCard } from "./MediaCard";
 import { MediaRow } from "./MediaRow";
 import { OnboardingModal } from "@/components/onboarding/OnboardingModal";
 import { useSearchContext } from "@/components/search/SearchProvider";
+import { isFutureDate } from "@/components/media/CardBadges";
 import { usePersistedState } from "@/hooks/usePersistedState";
 import { cn } from "@/lib/utils";
 import type { UserMediaRow } from "@/lib/queries/library";
@@ -69,6 +71,7 @@ type LibraryPrefs = {
   mediaType?: MediaType;
   sort?: Sort;
   newSeason?: boolean;
+  comingSoon?: boolean;
 };
 
 function readLibraryPrefs(): LibraryPrefs {
@@ -180,6 +183,9 @@ export function LibraryContent({ initialItems }: Props) {
   const [newSeasonOnly, setNewSeasonOnly] = useState<boolean>(
     () => readLibraryPrefs().newSeason ?? false
   );
+  const [comingSoonOnly, setComingSoonOnly] = useState<boolean>(
+    () => readLibraryPrefs().comingSoon ?? false
+  );
 
   // Sync items when the server re-fetches (e.g. after router.refresh).
   // Syncing during render (rather than in an effect) avoids an extra render
@@ -215,6 +221,7 @@ export function LibraryContent({ initialItems }: Props) {
     mediaType: MediaType;
     sort: Sort;
     newSeason: boolean;
+    comingSoon: boolean;
   }) {
     try {
       localStorage.setItem(LIB_PREF_KEY, JSON.stringify(next));
@@ -232,23 +239,45 @@ export function LibraryContent({ initialItems }: Props) {
 
   function handleStatusChange(newStatus: Status) {
     setStatusState(newStatus);
-    syncFilters({ status: newStatus, mediaType, sort, newSeason: newSeasonOnly });
+    syncFilters({ status: newStatus, mediaType, sort, newSeason: newSeasonOnly, comingSoon: comingSoonOnly });
   }
 
   function handleMediaTypeChange(newMediaType: MediaType) {
     setMediaTypeState(newMediaType);
-    syncFilters({ status, mediaType: newMediaType, sort, newSeason: newSeasonOnly });
+    syncFilters({ status, mediaType: newMediaType, sort, newSeason: newSeasonOnly, comingSoon: comingSoonOnly });
   }
 
   function handleSortChange(newSort: Sort) {
     setSortState(newSort);
-    syncFilters({ status, mediaType, sort: newSort, newSeason: newSeasonOnly });
+    syncFilters({ status, mediaType, sort: newSort, newSeason: newSeasonOnly, comingSoon: comingSoonOnly });
   }
 
+  // The two pills answer different questions -- what can I watch now, and what
+  // is on the way -- so turning one on clears the other.
   function handleNewSeasonToggle() {
     const next = !newSeasonOnly;
     setNewSeasonOnly(next);
-    syncFilters({ status, mediaType, sort, newSeason: next });
+    if (next) setComingSoonOnly(false);
+    syncFilters({
+      status,
+      mediaType,
+      sort,
+      newSeason: next,
+      comingSoon: next ? false : comingSoonOnly,
+    });
+  }
+
+  function handleComingSoonToggle() {
+    const next = !comingSoonOnly;
+    setComingSoonOnly(next);
+    if (next) setNewSeasonOnly(false);
+    syncFilters({
+      status,
+      mediaType,
+      sort,
+      newSeason: next ? false : newSeasonOnly,
+      comingSoon: next,
+    });
   }
 
   // Stable identity so the memoised MediaRow does not re-render on every
@@ -276,6 +305,13 @@ export function LibraryContent({ initialItems }: Props) {
         );
       });
     }
+    if (comingSoonOnly) {
+      rows = rows.filter(
+        (item) =>
+          item.hasUpcomingSeason ||
+          isFutureDate(item.media_items?.release_date)
+      );
+    }
     if (debouncedQuery) {
       const q = debouncedQuery.toLowerCase();
       rows = rows.filter((item) =>
@@ -283,7 +319,7 @@ export function LibraryContent({ initialItems }: Props) {
       );
     }
     return sortItems(rows, sort);
-  }, [items, status, mediaType, newSeasonOnly, debouncedQuery, sort]);
+  }, [items, status, mediaType, newSeasonOnly, comingSoonOnly, debouncedQuery, sort]);
 
   const showEmpty = filteredItems.length === 0;
   const empty: EmptyState = debouncedQuery
@@ -335,12 +371,27 @@ export function LibraryContent({ initialItems }: Props) {
                 className={cn(
                   "flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-150",
                   newSeasonOnly
-                    ? "border-yellow-500/40 bg-yellow-500/20 text-yellow-300"
+                    ? "border-[#3B82F6]/40 bg-[#3B82F6]/20 text-[#93c5fd]"
                     : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
                 )}
               >
                 <Sparkles className="h-3.5 w-3.5" />
                 New Season
+              </button>
+
+              <button
+                type="button"
+                onClick={handleComingSoonToggle}
+                aria-pressed={comingSoonOnly}
+                className={cn(
+                  "flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm transition-colors duration-150",
+                  comingSoonOnly
+                    ? "border-yellow-500/40 bg-yellow-500/20 text-yellow-300"
+                    : "border-border text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+                )}
+              >
+                <CalendarClock className="h-3.5 w-3.5" />
+                Coming Soon
               </button>
             </div>
 

@@ -1,3 +1,5 @@
+import type { SeasonStat } from "@/lib/tmdb-episodes";
+
 export interface TMDBGenre {
   id: number;
   name: string;
@@ -275,6 +277,8 @@ export type NormalizedMediaItem = {
   overview: string | null;
   director: string | null;
   total_episodes?: number | null;
+  // Set by the media detail page, which is the only caller holding air dates.
+  season_stats?: SeasonStat[] | null;
 };
 
 export function normalizeMediaItem(

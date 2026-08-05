@@ -68,6 +68,11 @@ CREATE TABLE IF NOT EXISTS batchflix.media_items (
   director text,
   -- TV only: TMDB number_of_episodes, used for new season detection
   total_episodes integer,
+  -- TV only: per-season aired episode counts, refreshed when the media detail
+  -- page loads. Lets the library measure progress against episodes that have
+  -- actually aired without calling TMDB per card.
+  -- Shape: [{"season_number":1,"air_date":"2020-08-14","aired_episodes":10}]
+  season_stats jsonb,
   created_at timestamptz DEFAULT now(),
   updated_at timestamptz DEFAULT now(),
   UNIQUE(tmdb_id, media_type)
@@ -75,6 +80,9 @@ CREATE TABLE IF NOT EXISTS batchflix.media_items (
 
 ALTER TABLE batchflix.media_items
   ADD COLUMN IF NOT EXISTS total_episodes integer;
+
+ALTER TABLE batchflix.media_items
+  ADD COLUMN IF NOT EXISTS season_stats jsonb;
 
 ALTER TABLE batchflix.media_items ENABLE ROW LEVEL SECURITY;
 

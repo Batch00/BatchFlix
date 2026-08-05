@@ -13,7 +13,7 @@ function MediaCardBase({ item }: { item: UserMediaRow }) {
   const { media_items: m, status } = item;
   const year = m.release_date ? +m.release_date.slice(0, 4) : null;
   const watched = item.watchedEpisodes ?? 0;
-  const total = m.total_episodes ?? 0;
+  const total = item.totalEpisodes ?? m.total_episodes ?? 0;
   const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
   const pct = total > 0 ? (watched / total) * 100 : 0;
   const hasNewContent = m.media_type === "tv" && status === "watched" && watched > 0 && total > watched;

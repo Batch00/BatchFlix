@@ -175,7 +175,7 @@ function MediaRowBase({ item, onRemoved }: Props) {
   }
 
   const watched = item.watchedEpisodes ?? 0;
-  const total = m.total_episodes ?? 0;
+  const total = item.totalEpisodes ?? m.total_episodes ?? 0;
   const showProgress = m.media_type === "tv" && watched > 0 && watched < total;
   const pct = total > 0 ? (watched / total) * 100 : 0;
   const hasNewContent = m.media_type === "tv" && rowStatus === "watched" && watched > 0 && total > watched;

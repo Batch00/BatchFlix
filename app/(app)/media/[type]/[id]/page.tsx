@@ -33,6 +33,7 @@ import {
   todayLocalDate,
   hasAired,
   countAiredEpisodes,
+  buildSeasonStats,
   purgeUnairedProgress,
   purgeProgressAiredAfterWatched,
 } from "@/lib/tmdb-episodes";
@@ -183,11 +184,26 @@ async function MediaDetailData({
     mediaType
   );
 
+  // Refreshed here because this is the only place that already holds the TMDB
+  // season list. The library reads the stored value rather than calling TMDB
+  // once per card, so it is as fresh as the last visit to this page.
+  const seasonStats =
+    mediaType === "tv"
+      ? await buildSeasonStats(
+          tmdbData.id,
+          (tmdbData as TMDBTVDetail).seasons ?? [],
+          todayLocalDate()
+        )
+      : null;
+
   const admin = createAdminClient();
   const { data: mediaItem } = await admin
     .schema("batchflix")
     .from("media_items")
-    .upsert(normalized, { onConflict: "tmdb_id,media_type" })
+    .upsert(
+      seasonStats ? { ...normalized, season_stats: seasonStats } : normalized,
+      { onConflict: "tmdb_id,media_type" }
+    )
     .select("id")
     .single();
 

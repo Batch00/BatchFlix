@@ -42,6 +42,59 @@ export async function countAiredEpisodes(
   }
 }
 
+export type SeasonStat = {
+  season_number: number;
+  air_date: string | null;
+  aired_episodes: number;
+};
+
+/**
+ * Per-season aired episode counts, stored on media_items so surfaces that must
+ * not call TMDB (the library grid) can still measure progress against episodes
+ * that exist. Only the most recent aired season can be mid-flight, so it is the
+ * only one worth spending a per-episode fetch on.
+ */
+export async function buildSeasonStats(
+  tmdbId: number,
+  seasons: Array<{
+    season_number: number;
+    air_date: string | null;
+    episode_count: number;
+  }>,
+  today: string
+): Promise<SeasonStat[]> {
+  const numbered = seasons.filter((s) => s.season_number > 0);
+  const latestAired = numbered
+    .filter((s) => hasAired(s.air_date, today))
+    .reduce<number | null>(
+      (max, s) => (max === null || s.season_number > max ? s.season_number : max),
+      null
+    );
+
+  const latestAiredCount =
+    latestAired === null
+      ? null
+      : await countAiredEpisodes(tmdbId, latestAired, today);
+
+  return numbered.map((s) => {
+    if (!hasAired(s.air_date, today)) {
+      return {
+        season_number: s.season_number,
+        air_date: s.air_date,
+        aired_episodes: 0,
+      };
+    }
+    return {
+      season_number: s.season_number,
+      air_date: s.air_date,
+      aired_episodes:
+        s.season_number === latestAired && latestAiredCount !== null
+          ? Math.min(latestAiredCount, s.episode_count)
+          : s.episode_count,
+    };
+  });
+}
+
 export async function markAllEpisodesWatched(
   userId: string,
   mediaId: string,

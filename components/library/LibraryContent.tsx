@@ -267,7 +267,7 @@ export function LibraryContent({ initialItems }: Props) {
     if (newSeasonOnly) {
       rows = rows.filter((item) => {
         const watched = item.watchedEpisodes ?? 0;
-        const total = item.media_items?.total_episodes ?? 0;
+        const total = item.totalEpisodes ?? item.media_items?.total_episodes ?? 0;
         return (
           item.media_items?.media_type === "tv" &&
           item.status === "watched" &&

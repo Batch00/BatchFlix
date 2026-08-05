@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SeasonStat } from "@/lib/tmdb-episodes";
 
 /**
  * Only the media_items columns the card and row surfaces actually render.
@@ -33,8 +34,56 @@ export type UserMediaRow = {
   is_favorite?: boolean;
   updated_at?: string;
   media_items: MediaItemRow;
+  // Aired-episode progress, attached for TV rows only. See episodeProgress.
   watchedEpisodes?: number;
+  totalEpisodes?: number;
 };
+
+/**
+ * Progress through the episodes that have actually aired, so every bar in the
+ * library means the same thing. Unaired seasons and the unaired tail of a
+ * currently airing season are excluded from both sides.
+ *
+ * Shows finished before per-episode tracking existed carry no progress rows, so
+ * a season that had aired when the user marked the show complete counts as
+ * watched. That is the same rule new season detection uses, which keeps the bar
+ * and the banner telling one story.
+ */
+function episodeProgress(
+  row: UserMediaRow,
+  stats: SeasonStat[] | undefined,
+  watchedBySeason: Record<number, number>
+): { watchedEpisodes: number; totalEpisodes: number } {
+  const trackedTotal = Object.values(watchedBySeason).reduce((a, b) => a + b, 0);
+
+  // No stored season data yet, which means nobody has opened this show's detail
+  // page. Fall back to the all-time episode count rather than an empty bar.
+  if (!stats || stats.length === 0) {
+    return {
+      watchedEpisodes: trackedTotal,
+      totalEpisodes: row.media_items?.total_episodes ?? 0,
+    };
+  }
+
+  let watchedEpisodes = 0;
+  let totalEpisodes = 0;
+  for (const season of stats) {
+    totalEpisodes += season.aired_episodes;
+    const tracked = watchedBySeason[season.season_number] ?? 0;
+    if (tracked > 0) {
+      // Clamp: stored counts can lag TMDB removing an episode.
+      watchedEpisodes += Math.min(tracked, season.aired_episodes);
+    } else if (
+      row.status === "watched" &&
+      row.watched_date &&
+      season.air_date &&
+      season.air_date <= row.watched_date
+    ) {
+      watchedEpisodes += season.aired_episodes;
+    }
+  }
+  return { watchedEpisodes, totalEpisodes };
+}
 
 type LibraryFilters = {
   status?: "watched" | "watching" | "watchlist";
@@ -102,21 +151,49 @@ export async function getUserLibrary(
   if (tvRows.length > 0) {
     try {
       const mediaIds = tvRows.map((r) => r.media_id);
-      const { data: progressData } = await supabase
-        .schema("batchflix")
-        .from("tv_progress")
-        .select("media_id")
-        .eq("user_id", userId)
-        .eq("watched", true)
-        .in("media_id", mediaIds);
+      // season_stats is fetched here rather than in the main select so its cost
+      // falls only on TV rows, and only when there are any.
+      const [{ data: progressData }, { data: statsData }] = await Promise.all([
+        supabase
+          .schema("batchflix")
+          .from("tv_progress")
+          .select("media_id, season_number")
+          .eq("user_id", userId)
+          .eq("watched", true)
+          .in("media_id", mediaIds),
+        supabase
+          .schema("batchflix")
+          .from("media_items")
+          .select("id, season_stats")
+          .in("id", mediaIds),
+      ]);
 
-      const progressMap: Record<string, number> = {};
+      // Per season, so a season the user never tracked is distinguishable from
+      // one they tracked and did not finish.
+      const progressMap: Record<string, Record<number, number>> = {};
       for (const p of progressData ?? []) {
-        progressMap[p.media_id] = (progressMap[p.media_id] ?? 0) + 1;
+        const seasons = (progressMap[p.media_id] ??= {});
+        seasons[p.season_number] = (seasons[p.season_number] ?? 0) + 1;
       }
+
+      const statsMap: Record<string, SeasonStat[]> = {};
+      for (const s of (statsData ?? []) as Array<{
+        id: string;
+        season_stats: SeasonStat[] | null;
+      }>) {
+        if (s.season_stats) statsMap[s.id] = s.season_stats;
+      }
+
       rows = rows.map((r) =>
         r.media_items?.media_type === "tv"
-          ? { ...r, watchedEpisodes: progressMap[r.media_id] ?? 0 }
+          ? {
+              ...r,
+              ...episodeProgress(
+                r,
+                statsMap[r.media_id],
+                progressMap[r.media_id] ?? {}
+              ),
+            }
           : r
       );
     } catch {

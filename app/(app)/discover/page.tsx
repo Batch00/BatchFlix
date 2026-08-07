@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { DiscoverClient } from "@/components/discover/DiscoverClient";
 import type { DiscoverItem } from "@/components/discover/DiscoverRow";
+import { isFutureDate } from "@/components/media/CardBadges";
 
 export const metadata: Metadata = { title: "Discover" };
 
@@ -42,12 +43,33 @@ function toDiscoverItems(
   }));
 }
 
+/**
+ * TMDB's upcoming lists are ordered by popularity and still include titles
+ * already released in some regions, so filter to genuinely future dates and
+ * reorder nearest-first before the 20-item slice.
+ */
+function toUpcomingItems(
+  data: TMDBPageResult,
+  mediaType: "movie" | "tv"
+): DiscoverItem[] {
+  const upcoming = (data.results ?? [])
+    .filter((item) => isFutureDate(item.release_date ?? item.first_air_date))
+    .sort((a, b) =>
+      (a.release_date ?? a.first_air_date ?? "").localeCompare(
+        b.release_date ?? b.first_air_date ?? ""
+      )
+    );
+  return toDiscoverItems({ results: upcoming }, mediaType);
+}
+
 type LibMapRow = {
   status: string;
   media_items: { tmdb_id: number; media_type: string } | null;
 };
 
 export default async function DiscoverPage() {
+  const today = new Date().toISOString().slice(0, 10);
+
   const [
     trendingMoviesData,
     trendingTvData,
@@ -57,6 +79,8 @@ export default async function DiscoverPage() {
     topRatedTvData,
     nowPlayingData,
     onTheAirData,
+    upcomingMoviesData,
+    upcomingTvData,
     supabase,
   ] = await Promise.all([
     fetchTMDB("/trending/movie/week"),
@@ -67,6 +91,9 @@ export default async function DiscoverPage() {
     fetchTMDB("/tv/top_rated"),
     fetchTMDB("/movie/now_playing"),
     fetchTMDB("/tv/on_the_air"),
+    fetchTMDB("/movie/upcoming?region=US"),
+    // TMDB has no upcoming-TV endpoint, so discover with a future premiere floor.
+    fetchTMDB(`/discover/tv?first_air_date.gte=${today}&sort_by=popularity.desc`),
     createClient(),
   ]);
 
@@ -94,10 +121,12 @@ export default async function DiscoverPage() {
     <div className="mx-auto max-w-7xl px-4 pb-16 pt-4 md:px-6">
       <DiscoverClient
         trendingMovies={toDiscoverItems(trendingMoviesData, "movie")}
+        upcomingMovies={toUpcomingItems(upcomingMoviesData, "movie")}
         nowPlaying={toDiscoverItems(nowPlayingData, "movie")}
         popularMovies={toDiscoverItems(popularMoviesData, "movie")}
         topRatedMovies={toDiscoverItems(topRatedMoviesData, "movie")}
         trendingTv={toDiscoverItems(trendingTvData, "tv")}
+        upcomingTv={toUpcomingItems(upcomingTvData, "tv")}
         onTheAir={toDiscoverItems(onTheAirData, "tv")}
         popularTv={toDiscoverItems(popularTvData, "tv")}
         topRatedTv={toDiscoverItems(topRatedTvData, "tv")}

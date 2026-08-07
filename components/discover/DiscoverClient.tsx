@@ -13,10 +13,12 @@ type Tab = "movies" | "tv";
 
 type Props = {
   trendingMovies: DiscoverItem[];
+  upcomingMovies: DiscoverItem[];
   nowPlaying: DiscoverItem[];
   popularMovies: DiscoverItem[];
   topRatedMovies: DiscoverItem[];
   trendingTv: DiscoverItem[];
+  upcomingTv: DiscoverItem[];
   onTheAir: DiscoverItem[];
   popularTv: DiscoverItem[];
   topRatedTv: DiscoverItem[];
@@ -25,10 +27,12 @@ type Props = {
 
 export function DiscoverClient({
   trendingMovies,
+  upcomingMovies,
   nowPlaying,
   popularMovies,
   topRatedMovies,
   trendingTv,
+  upcomingTv,
   onTheAir,
   popularTv,
   topRatedTv,
@@ -121,6 +125,12 @@ export function DiscoverClient({
             viewMode={view}
           />
           <DiscoverRow
+            title="Coming Soon"
+            items={upcomingMovies}
+            initialLibraryMap={libraryMap}
+            viewMode={view}
+          />
+          <DiscoverRow
             title="Now Playing in Theaters"
             items={nowPlaying}
             initialLibraryMap={libraryMap}
@@ -144,6 +154,12 @@ export function DiscoverClient({
           <DiscoverRow
             title="Trending This Week"
             items={trendingTv}
+            initialLibraryMap={libraryMap}
+            viewMode={view}
+          />
+          <DiscoverRow
+            title="Coming Soon"
+            items={upcomingTv}
             initialLibraryMap={libraryMap}
             viewMode={view}
           />

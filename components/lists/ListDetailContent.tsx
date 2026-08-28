@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -330,6 +330,14 @@ function SortableSublistChip({
     isDragging,
   } = useSortable({ id: sub.id });
 
+  // isDragging is already false by the time the trailing click fires (dnd-kit
+  // clears the active drag on pointerup), so the click would navigate. Latch
+  // the drag for the duration of the interaction and clear it on the next
+  // pointer down: pointerdown resets, dragging sets, the trailing click is
+  // suppressed.
+  const draggedRef = useRef(false);
+  if (isDragging) draggedRef.current = true;
+
   return (
     <div
       ref={setNodeRef}
@@ -338,12 +346,19 @@ function SortableSublistChip({
         transition,
         opacity: isDragging ? 0.5 : 1,
       }}
+      onPointerDown={() => {
+        draggedRef.current = false;
+      }}
       className="group relative w-full"
     >
       <Link
         href={`/lists/${sub.id}`}
+        draggable={false}
         onClick={(e) => {
-          if (isDragging) e.preventDefault();
+          if (isDragging || draggedRef.current) {
+            e.preventDefault();
+            draggedRef.current = false;
+          }
         }}
         className={cn(
           "flex w-full items-center gap-1.5 rounded-full border border-[#1f1f1f] py-1.5 pl-2 text-sm transition-colors hover:border-[#2563EB]/40",
@@ -460,9 +475,13 @@ export function ListDetailContent({ list }: Props) {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ listIds: newSublists.map((s) => s.id) }),
+          keepalive: true,
         });
-        if (!res.ok) throw new Error();
-      } catch {
+        if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
+      } catch (err) {
+        // A navigation away aborts the in-flight request even though the server
+        // has already committed the write, so an abort is not a save failure.
+        if (err instanceof DOMException && err.name === "AbortError") return;
         setSublists(prev);
         toast.error("Failed to save order");
       }

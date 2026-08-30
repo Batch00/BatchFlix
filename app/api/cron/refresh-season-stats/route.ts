@@ -34,6 +34,29 @@ type Candidate = {
 };
 
 /**
+ * A season worth re-reading tonight. Either it changed state around now, or it
+ * is part way through a weekly release and gains episodes every week, which
+ * keeps it a candidate until it finishes.
+ *
+ * A season with no stored episode_count predates the field. That is unknown,
+ * not zero, so it fails the mid-flight test rather than asserting the season is
+ * complete. It picks the field up the next time anything refreshes the show.
+ */
+function needsRefresh(
+  season: SeasonStat,
+  today: string,
+  windowStart: string,
+  windowEnd: string
+): boolean {
+  if (!season.air_date) return false;
+  if (season.air_date >= windowStart && season.air_date <= windowEnd) {
+    return true;
+  }
+  if (season.episode_count === undefined) return false;
+  return season.air_date <= today && season.aired_episodes < season.episode_count;
+}
+
+/**
  * season_stats is written when a media detail page loads, so a show nobody has
  * opened since its new season aired still describes the pre-air state and the
  * library sees no new episodes. This refreshes the shows that could plausibly
@@ -61,12 +84,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // The air date window cannot be pushed into PostgREST: it asks whether any
-  // element of a jsonb array falls in a range, which needs a SQL function.
-  // The preceding filters keep the set small enough to finish the job here.
+  // The season test cannot be pushed into PostgREST: it inspects each element
+  // of a jsonb array, which needs a SQL function. The preceding filters keep
+  // the set small enough to finish the job here.
   const candidates = ((data ?? []) as Candidate[]).filter((row) =>
-    (row.season_stats ?? []).some(
-      (s) => !!s.air_date && s.air_date >= windowStart && s.air_date <= windowEnd
+    (row.season_stats ?? []).some((s) =>
+      needsRefresh(s, today, windowStart, windowEnd)
     )
   );
 

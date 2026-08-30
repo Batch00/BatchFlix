@@ -46,6 +46,13 @@ export type SeasonStat = {
   season_number: number;
   air_date: string | null;
   aired_episodes: number;
+  /**
+   * TMDB's total for the season, including episodes still to come. A season
+   * with fewer aired than total is still releasing weekly. Optional because
+   * rows written before this field existed do not carry it: absent means
+   * unknown, never zero.
+   */
+  episode_count?: number;
 };
 
 /**
@@ -82,6 +89,7 @@ export async function buildSeasonStats(
         season_number: s.season_number,
         air_date: s.air_date,
         aired_episodes: 0,
+        episode_count: s.episode_count,
       };
     }
     return {
@@ -91,6 +99,7 @@ export async function buildSeasonStats(
         s.season_number === latestAired && latestAiredCount !== null
           ? Math.min(latestAiredCount, s.episode_count)
           : s.episode_count,
+      episode_count: s.episode_count,
     };
   });
 }

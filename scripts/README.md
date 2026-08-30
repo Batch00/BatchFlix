@@ -50,3 +50,39 @@ The script:
 - Ratings are auto-scaled to 1-10 (the internal storage format).
 - The script adds a 200ms delay between TMDB API calls to respect rate limits.
 - Running the script multiple times is safe -- items are upserted, not duplicated.
+
+## backfill-season-stats.ts
+
+Populates `media_items.season_stats` for every TV show in the database.
+
+`season_stats` holds per-season air dates and aired episode counts. The library
+reads it to size progress bars and to decide the NEW SEASON and COMING SOON
+badges, and the nightly cron at `/api/cron/refresh-season-stats` uses it to
+decide which shows to re-check. A show only gets the column written when its
+media detail page loads, so a library imported from CSV starts out mostly empty
+and the cron has nothing to work from.
+
+### Running
+
+```bash
+npx tsx scripts/backfill-season-stats.ts
+```
+
+Use `tsx`, not `ts-node`: this script imports `buildSeasonStats` from the app's
+`lib/` through the `@/` path alias, which ts-node does not resolve.
+
+### When to run it
+
+- Once after deploying `season_stats`, to seed the whole library at once.
+- After a bulk import that added TV shows.
+- Otherwise never. The detail page and the nightly cron keep the column current,
+  so this is a seeding tool rather than routine maintenance.
+
+### Notes
+
+- Safe to re-run. Each show is rewritten from TMDB, so the result does not
+  depend on what was stored before.
+- Roughly two TMDB calls per show (the show, then its latest aired season) with
+  a 250ms delay between shows.
+- Shows whose TMDB lookup fails are counted as skipped and left untouched,
+  never blanked.

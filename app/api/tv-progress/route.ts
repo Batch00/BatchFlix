@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { todayLocalDate } from "@/lib/tmdb-episodes";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -108,10 +109,15 @@ export async function POST(request: NextRequest) {
     // watchedCount === 0: leave status alone, the user may have set it deliberately
 
     if (newStatus !== null && newStatus !== currentStatus) {
+      // Finishing via progress refreshes the show's watched date. A date left
+      // over from an earlier completion predates any season aired since, and
+      // the detail page cleanup would read that season's rows as artifacts.
+      const updates: Record<string, unknown> = { status: newStatus, updated_at: new Date().toISOString() };
+      if (newStatus === "watched") updates.watched_date = watchedDate ?? todayLocalDate();
       await supabase
         .schema("batchflix")
         .from("user_media")
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update(updates)
         .eq("user_id", user.id)
         .eq("media_id", mediaId);
     }

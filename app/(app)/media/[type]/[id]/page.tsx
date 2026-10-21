@@ -315,6 +315,9 @@ async function MediaDetailData({
     // Self-heal: progress written before the air-date guard existed can cover
     // seasons that have not aired, which suppresses new season detection.
     // Drop those rows server-side so the repair happens as the user browses.
+    // Both cleanups below only touch shows marked watched: progress on a show
+    // the user is actively watching is real and must never be deleted.
+    const isWatched = userMedia?.status === "watched";
     const today = todayLocalDate();
     // Only seasons with a known future air date. A missing air_date is
     // ambiguous and deleting real history over it is not worth the risk.
@@ -330,7 +333,7 @@ async function MediaDetailData({
           .map((r) => r.season_number)
       ),
     ];
-    if (staleSeasons.length > 0) {
+    if (isWatched && staleSeasons.length > 0) {
       const removed = await purgeUnairedProgress(userId, mediaItem.id, staleSeasons);
       console.log("[unaired-progress-cleanup]", {
         mediaId: mediaItem.id,
@@ -345,7 +348,7 @@ async function MediaDetailData({
     // are bulk-mark artifacts. Drop them so the season reads as untracked.
     // A missing watched_date or air_date is ambiguous, so leave those alone.
     const showWatchedDate = userMedia?.watched_date ?? null;
-    if (showWatchedDate) {
+    if (isWatched && showWatchedDate) {
       for (const season of tvSeasons) {
         if (!season.air_date || season.air_date <= showWatchedDate) continue;
         const hasWatchedRows = tvProgress.some(

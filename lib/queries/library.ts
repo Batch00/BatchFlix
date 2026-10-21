@@ -155,12 +155,13 @@ export async function getUserLibrary(
       // season_stats is fetched here rather than in the main select so its cost
       // falls only on TV rows, and only when there are any.
       const [{ data: progressData }, { data: statsData }] = await Promise.all([
+        // Counted in the database: raw watched rows would run into the
+        // 1000-row response cap as a library grows.
         supabase
           .schema("batchflix")
-          .from("tv_progress")
-          .select("media_id, season_number")
+          .from("tv_progress_watched_counts")
+          .select("media_id, season_number, watched_count")
           .eq("user_id", userId)
-          .eq("watched", true)
           .in("media_id", mediaIds),
         supabase
           .schema("batchflix")
@@ -174,7 +175,7 @@ export async function getUserLibrary(
       const progressMap: Record<string, Record<number, number>> = {};
       for (const p of progressData ?? []) {
         const seasons = (progressMap[p.media_id] ??= {});
-        seasons[p.season_number] = (seasons[p.season_number] ?? 0) + 1;
+        seasons[p.season_number] = p.watched_count;
       }
 
       const statsMap: Record<string, SeasonStat[]> = {};

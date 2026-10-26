@@ -97,6 +97,7 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
         });
         if (res.ok) {
           toast.success(`Added to ${listMode.listName}`);
+          router.refresh();
         } else if (res.status === 409) {
           toast.error("Already in list");
         } else {
@@ -106,7 +107,7 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
         toast.error("Failed to add to list");
       }
     },
-    [results, listMode]
+    [results, listMode, router]
   );
 
   const addToFavorites = useCallback(

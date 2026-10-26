@@ -195,11 +195,12 @@ export function RankingList({ initialItems, listId, mediaType, listName }: Props
           setItems(items); // revert optimistic update
           return;
         }
+        router.refresh();
       } catch {
         toast.error("Failed to save order");
       }
     },
-    [items, listId]
+    [items, listId, router]
   );
 
   const handleRemove = useCallback(

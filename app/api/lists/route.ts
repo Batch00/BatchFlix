@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getUserLists } from "@/lib/queries/lists";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const ruleSchema = z.object({
   type: z.string(),
@@ -105,5 +106,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateUserData();
   return NextResponse.json(data, { status: 201 });
 }

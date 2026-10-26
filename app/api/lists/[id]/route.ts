@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getListById } from "@/lib/queries/lists";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 type Params = Promise<{ id: string }>;
 
@@ -143,6 +144,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
+  revalidateUserData();
   return NextResponse.json(data);
 }
 
@@ -188,5 +190,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateUserData();
   return NextResponse.json({ success: true });
 }

@@ -230,22 +230,3 @@ export async function getUserMediaItem(
   if (error) throw error;
   return data as UserMediaRow | null;
 }
-
-export async function getUserMediaByTmdbId(
-  supabase: SupabaseClient,
-  userId: string,
-  tmdbId: number,
-  mediaType: "movie" | "tv"
-): Promise<UserMediaRow | null> {
-  const { data: mediaItem } = await supabase
-    .schema("batchflix")
-    .from("media_items")
-    .select("id")
-    .eq("tmdb_id", tmdbId)
-    .eq("media_type", mediaType)
-    .maybeSingle();
-
-  if (!mediaItem) return null;
-
-  return getUserMediaItem(supabase, userId, mediaItem.id);
-}

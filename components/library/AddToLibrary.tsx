@@ -121,6 +121,7 @@ export function AddToLibrary({
       const updated = await res.json();
       setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
       toast.success(`Marked as ${STATUS_LABELS[newStatus]}`);
+      router.refresh();
     } catch {
       setActiveStatus(prevStatus);
       toast.error("Failed to update status");
@@ -155,6 +156,7 @@ export function AddToLibrary({
       setUserMedia((prev) => (prev ? { ...prev, ...updated } : prev));
       toast.success("Saved");
       setPanelOpen(false);
+      router.refresh();
     } catch {
       toast.error("Could not save.");
     } finally {
@@ -250,6 +252,7 @@ export function AddToLibrary({
 
     setUserMedia(null);
     setConfirmRemove(false);
+    router.refresh();
 
     toast("Removed from library", {
       action: {
@@ -322,6 +325,8 @@ export function AddToLibrary({
           });
         }
       }
+
+      router.refresh();
 
       if (!newFav) {
         toast(`Removed from ${listName}`, {

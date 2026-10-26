@@ -21,15 +21,15 @@ function getRangeLabel(rangeKey: string): string {
 }
 
 async function StatsData({
-  userId,
+  statsPromise,
+  range,
   rangeKey,
 }: {
-  userId: string;
+  statsPromise: ReturnType<typeof getStatsData>;
+  range: ReturnType<typeof parseTimeRange>;
   rangeKey: string;
 }) {
-  const supabase = await createClient();
-  const range = parseTimeRange(rangeKey === "lifetime" ? undefined : rangeKey);
-  const stats = await getStatsData(supabase, userId, range);
+  const stats = await statsPromise;
   const rangeLabel = getRangeLabel(rangeKey);
 
   return (
@@ -52,6 +52,10 @@ export default async function StatsPage({
 
   if (!user) notFound();
 
+  // Started before awaiting the year list so the two queries overlap; the
+  // stats themselves still stream in behind the Suspense boundary.
+  const range = parseTimeRange(rangeKey === "lifetime" ? undefined : rangeKey);
+  const statsPromise = getStatsData(supabase, user.id, range);
   const watchedYears = await getWatchedYears(supabase, user.id);
 
   return (
@@ -79,7 +83,7 @@ export default async function StatsPage({
         )}
 
         <Suspense fallback={<StatsSkeleton />}>
-          <StatsData userId={user.id} rangeKey={rangeKey} />
+          <StatsData statsPromise={statsPromise} range={range} rangeKey={rangeKey} />
         </Suspense>
       </div>
     </div>

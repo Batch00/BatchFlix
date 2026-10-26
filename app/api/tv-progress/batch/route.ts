@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 import { todayLocalDate } from "@/lib/tmdb-episodes";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   mediaId: z.string().uuid(),
@@ -98,5 +99,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  revalidateUserData();
   return NextResponse.json({ ok: true });
 }

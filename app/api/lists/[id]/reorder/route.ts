@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
+import { revalidateUserData } from "@/lib/revalidate";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
@@ -85,6 +85,6 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     }
   }
 
-  revalidatePath(`/lists/${id}`);
+  revalidateUserData();
   return NextResponse.json({ success: true });
 }

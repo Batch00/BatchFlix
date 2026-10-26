@@ -49,6 +49,7 @@ export function CollectionSection({
       if (!res.ok) throw new Error();
       const result = await res.json() as { id: string; media_id: string };
       setLibraryMap((prev) => ({ ...prev, [`movie:${id}`]: "watchlist" }));
+      router.refresh();
       toast("Added to Watchlist", {
         action: {
           label: "Add to List",

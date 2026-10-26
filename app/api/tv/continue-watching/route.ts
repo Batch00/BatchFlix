@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 import { todayLocalDate, hasAired } from "@/lib/tmdb-episodes";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   mediaId: z.string().uuid(),
@@ -93,5 +94,6 @@ export async function POST(request: NextRequest) {
     .eq("user_id", user.id)
     .eq("media_id", mediaId);
 
+  revalidateUserData();
   return NextResponse.json({ success: true, message: "Season tracking updated" });
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv, Plus, LayoutGrid, List } from "lucide-react";
@@ -49,6 +50,7 @@ export function KeywordResultsClient({
   initialLibraryMap,
 }: Props) {
   const { openListPicker } = useListPicker();
+  const router = useRouter();
   const [mediaFilter, setMediaFilter] = useState<MediaType>("all");
   const [libraryMap, setLibraryMap] =
     useState<Record<string, LibraryEntry>>(initialLibraryMap);
@@ -79,6 +81,7 @@ export function KeywordResultsClient({
         ...prev,
         [key]: { status: "watchlist", userMediaId: result.id },
       }));
+      router.refresh();
       toast("Added to Watchlist", {
         action: {
           label: "Add to List",

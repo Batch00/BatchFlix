@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv, Plus } from "lucide-react";
@@ -23,6 +24,7 @@ export function RecommendationsSection({
   userLibraryMap: initialMap,
 }: Props) {
   const { openListPicker } = useListPicker();
+  const router = useRouter();
   const [libraryMap, setLibraryMap] = useState(initialMap);
 
   const items = recommendations
@@ -49,6 +51,7 @@ export function RecommendationsSection({
         ...prev,
         [`${item.media_type}:${item.id}`]: "watchlist",
       }));
+      router.refresh();
       toast("Added to Watchlist", {
         action: {
           label: "Add to List",

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   listIds: z.array(z.string().uuid()),
@@ -50,5 +51,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Failed to update positions" }, { status: 500 });
   }
 
+  revalidateUserData();
   return NextResponse.json({ success: true });
 }

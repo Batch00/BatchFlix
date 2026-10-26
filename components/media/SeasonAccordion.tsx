@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronDown, ChevronUp, CheckCheck } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -54,6 +55,7 @@ export function SeasonAccordion({
   isShowWatched,
   showWatchedDate,
 }: Props) {
+  const router = useRouter();
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
@@ -119,12 +121,13 @@ export function SeasonAccordion({
           body: JSON.stringify({ mediaId, seasonNumber, episodeNumber, watched }),
         });
         if (!res.ok) throw new Error();
+        router.refresh();
       } catch {
         setProgress((p) => ({ ...p, [key]: prev ?? { watched: !watched, watched_date: null, rating: null } }));
         toast.error("Could not save progress");
       }
     },
-    [mediaId, progress, userId]
+    [mediaId, progress, userId, router]
   );
 
   const handleRateEpisode = useCallback(
@@ -142,11 +145,12 @@ export function SeasonAccordion({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ mediaId, seasonNumber, episodeNumber, watched: true, rating }),
         });
+        router.refresh();
       } catch {
         setProgress((p) => ({ ...p, [key]: prev ?? { watched: true, watched_date: null, rating: null } }));
       }
     },
-    [mediaId, progress, userId]
+    [mediaId, progress, userId, router]
   );
 
   async function handleMarkAllSeason(season: TMDBSeason, watched: boolean) {
@@ -187,6 +191,7 @@ export function SeasonAccordion({
         }),
       });
       if (!res.ok) throw new Error();
+      router.refresh();
       toast.success(watched ? `Season ${season.season_number} marked watched` : `Season ${season.season_number} unmarked`);
     } catch {
       // Revert optimistic update

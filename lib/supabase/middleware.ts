@@ -25,9 +25,10 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims verifies the JWT signature locally against the cached JWKS and
+  // only calls Supabase when the token needs refreshing. getUser would add a
+  // network round trip to every request, and the pages call it anyway.
+  const { data } = await supabase.auth.getClaims();
 
-  return { supabaseResponse, user };
+  return { supabaseResponse, user: data?.claims ?? null };
 }

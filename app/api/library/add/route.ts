@@ -6,6 +6,7 @@ import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
 import { markAllEpisodesWatched } from "@/lib/tmdb-episodes";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   tmdbId: z.number().int().positive(),
@@ -104,5 +105,6 @@ export async function POST(request: NextRequest) {
     await markAllEpisodesWatched(user.id, mediaItem.id, tmdbId, watched ?? null);
   }
 
+  revalidateUserData();
   return NextResponse.json(userMedia, { status: 200 });
 }

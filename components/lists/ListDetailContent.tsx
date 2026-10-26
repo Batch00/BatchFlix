@@ -478,6 +478,7 @@ export function ListDetailContent({ list }: Props) {
           keepalive: true,
         });
         if (!res.ok) throw new Error(`Reorder failed: ${res.status}`);
+        router.refresh();
       } catch (err) {
         // A navigation away aborts the in-flight request even though the server
         // has already committed the write, so an abort is not a save failure.
@@ -486,7 +487,7 @@ export function ListDetailContent({ list }: Props) {
         toast.error("Failed to save order");
       }
     },
-    [sublists]
+    [sublists, router]
   );
 
   const handleDragEnd = useCallback(

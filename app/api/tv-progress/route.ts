@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
 import { todayLocalDate } from "@/lib/tmdb-episodes";
+import { revalidateUserData } from "@/lib/revalidate";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -123,5 +124,6 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  revalidateUserData();
   return NextResponse.json(data);
 }

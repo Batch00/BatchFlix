@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Film, Tv, Plus, ChevronDown, ChevronUp, LayoutGrid, List } from "lucide-react";
@@ -214,6 +215,7 @@ export function PersonCreditsClient({
   libraryMap: initialMap,
 }: Props) {
   const { openListPicker } = useListPicker();
+  const router = useRouter();
   const [bioExpanded, setBioExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("acting");
   const [mediaFilter, setMediaFilter] = useState<MediaFilter>("all");
@@ -255,6 +257,7 @@ export function PersonCreditsClient({
         ...prev,
         [`${credit.id}-${credit.media_type}`]: "watchlist",
       }));
+      router.refresh();
       toast("Added to Watchlist", {
         action: {
           label: "Add to List",

@@ -18,7 +18,7 @@ import {
   type TMDBSeason,
   type KeyCrew,
 } from "@/lib/tmdb";
-import { getUserMediaByTmdbId } from "@/lib/queries/library";
+import { getUserMediaItem } from "@/lib/queries/library";
 import { AddToLibrary } from "@/components/library/AddToLibrary";
 import { AddToListButton } from "@/components/library/AddToListButton";
 import { MediaDetailSkeleton } from "@/components/skeletons/MediaDetailSkeleton";
@@ -212,11 +212,11 @@ async function MediaDetailData({
       ? (tmdbData as TMDBMovieDetail).belongs_to_collection?.id ?? null
       : null;
 
-  // The library map does not depend on userMedia or the collection, so fetch
-  // all three together instead of chaining them.
-  const [userMedia, collection, libResult] = await Promise.all([
+  // None of these depend on each other, so fetch them together instead of
+  // chaining them. The upsert already returned the media id.
+  const [userMedia, collection, libResult, progressResult] = await Promise.all([
     userId && mediaItem
-      ? getUserMediaByTmdbId(supabase, userId, normalized.tmdb_id, mediaType)
+      ? getUserMediaItem(supabase, userId, mediaItem.id)
       : null,
     collectionId ? fetchCollection(collectionId) : null,
     userId
@@ -225,6 +225,14 @@ async function MediaDetailData({
           .from("user_media")
           .select("status, media_items(tmdb_id, media_type)")
           .eq("user_id", userId)
+      : null,
+    userId && mediaItem && mediaType === "tv"
+      ? supabase
+          .schema("batchflix")
+          .from("tv_progress")
+          .select("season_number, episode_number, watched, watched_date, rating")
+          .eq("user_id", userId)
+          .eq("media_id", mediaItem.id)
       : null,
   ]);
 
@@ -300,17 +308,7 @@ async function MediaDetailData({
   };
   let tvProgress: TVProgressRow[] = [];
   if (userId && mediaItem && mediaType === "tv") {
-    try {
-      const { data } = await supabase
-        .schema("batchflix")
-        .from("tv_progress")
-        .select("season_number, episode_number, watched, watched_date, rating")
-        .eq("user_id", userId)
-        .eq("media_id", mediaItem.id);
-      tvProgress = (data ?? []) as TVProgressRow[];
-    } catch {
-      // tv_progress table may not exist yet
-    }
+    tvProgress = (progressResult?.data ?? []) as TVProgressRow[];
 
     // Self-heal: progress written before the air-date guard existed can cover
     // seasons that have not aired, which suppresses new season detection.

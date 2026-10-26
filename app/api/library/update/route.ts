@@ -3,6 +3,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { markAllEpisodesWatched } from "@/lib/tmdb-episodes";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   userMediaId: z.string().uuid(),
@@ -244,5 +245,6 @@ export async function PATCH(request: NextRequest) {
     }
   }
 
+  revalidateUserData();
   return NextResponse.json({ ...data, removedFromLists });
 }

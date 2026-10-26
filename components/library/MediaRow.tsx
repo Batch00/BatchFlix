@@ -87,6 +87,7 @@ function MediaRowBase({ item, onRemoved }: Props) {
       body: JSON.stringify({ userMediaId: item.id, ...fields }),
     });
     if (!res.ok) throw new Error("Update failed");
+    router.refresh();
   }
 
   async function handleStatusChange(newStatus: Status) {
@@ -148,6 +149,7 @@ function MediaRowBase({ item, onRemoved }: Props) {
       });
       if (!res.ok) throw new Error("Remove failed");
       onRemoved(item.id);
+      router.refresh();
       toast("Removed from library", {
         action: {
           label: "Undo",

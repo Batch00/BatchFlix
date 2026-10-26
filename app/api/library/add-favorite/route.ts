@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 const schema = z.object({
   tmdbId: z.number().int().positive(),
@@ -135,5 +136,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
+  revalidateUserData();
   return NextResponse.json({ success: true });
 }

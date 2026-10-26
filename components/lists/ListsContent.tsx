@@ -124,12 +124,13 @@ export function ListsContent({ initialLists }: Props) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ listIds: reordered.map((l) => l.id) }),
         });
+        router.refresh();
       } catch {
         toast.error("Failed to save list order");
         setLists(initialLists);
       }
     },
-    [sortable, favorites, initialLists]
+    [sortable, favorites, initialLists, router]
   );
 
   async function handleConfirmDelete() {

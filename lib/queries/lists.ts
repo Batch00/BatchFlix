@@ -147,48 +147,52 @@ export async function getListById(
   const items = (listRecord.list_items ?? []) as Array<Record<string, unknown>>;
   const mediaIds = items.map((item) => item.media_id as string);
 
-  let userMediaMap = new Map<string, ListItemUserMedia>();
+  // Fetch user_media, plus parent info (for sublist breadcrumb) or sublists
+  // (for parent view). Both depend only on the list row, so run them together.
+  const [userMediaResult, parentResult, sublistResult] = await Promise.all([
+    mediaIds.length > 0
+      ? supabase
+          .schema("batchflix")
+          .from("user_media")
+          .select("id, media_id, status, rating, is_favorite")
+          .eq("user_id", userId)
+          .in("media_id", mediaIds)
+      : null,
+    parentListId
+      ? supabase
+          .schema("batchflix")
+          .from("lists")
+          .select("id, name, color")
+          .eq("id", parentListId)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : null,
+    parentListId
+      ? null
+      : supabase
+          .schema("batchflix")
+          .from("lists")
+          .select("id, name, color, description, is_pinned, rules, list_items(count)")
+          .eq("parent_list_id", listId)
+          .eq("user_id", userId)
+          .order("position", { ascending: true })
+          .order("created_at", { ascending: true }),
+  ]);
 
-  if (mediaIds.length > 0) {
-    const { data: userMediaData } = await supabase
-      .schema("batchflix")
-      .from("user_media")
-      .select("id, media_id, status, rating, is_favorite")
-      .eq("user_id", userId)
-      .in("media_id", mediaIds);
+  const userMediaMap = new Map<string, ListItemUserMedia>(
+    (userMediaResult?.data ?? []).map((um) => [
+      um.media_id as string,
+      um as ListItemUserMedia,
+    ])
+  );
 
-    userMediaMap = new Map(
-      (userMediaData ?? []).map((um) => [
-        um.media_id as string,
-        um as ListItemUserMedia,
-      ])
-    );
-  }
-
-  // Fetch parent info (for sublist breadcrumb) or sublists (for parent view)
   let parent: { id: string; name: string; color: string } | null = null;
   let sublists: SublistSummary[] = [];
 
   if (parentListId) {
-    const { data: parentData } = await supabase
-      .schema("batchflix")
-      .from("lists")
-      .select("id, name, color")
-      .eq("id", parentListId)
-      .eq("user_id", userId)
-      .maybeSingle();
-    parent = (parentData as { id: string; name: string; color: string } | null) ?? null;
+    parent = (parentResult?.data as { id: string; name: string; color: string } | null) ?? null;
   } else {
-    const { data: sublistData } = await supabase
-      .schema("batchflix")
-      .from("lists")
-      .select("id, name, color, description, is_pinned, rules, list_items(count)")
-      .eq("parent_list_id", listId)
-      .eq("user_id", userId)
-      .order("position", { ascending: true })
-      .order("created_at", { ascending: true });
-
-    sublists = ((sublistData ?? []) as Array<Record<string, unknown>>).map(
+    sublists = ((sublistResult?.data ?? []) as Array<Record<string, unknown>>).map(
       (s) => ({
         id: s.id as string,
         name: s.name as string,

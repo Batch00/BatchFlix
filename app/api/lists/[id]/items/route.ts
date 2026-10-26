@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeMediaItem } from "@/lib/tmdb";
 import type { TMDBMovieDetail, TMDBTVDetail } from "@/lib/tmdb";
 import { isDemoUser, demoGuardResponse } from "@/lib/demo";
+import { revalidateUserData } from "@/lib/revalidate";
 
 type Params = Promise<{ id: string }>;
 
@@ -140,8 +140,7 @@ export async function POST(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  revalidatePath("/lists");
-  revalidatePath(`/lists/${id}`);
+  revalidateUserData();
 
   return NextResponse.json(data, { status: 201 });
 }
@@ -193,5 +192,6 @@ export async function DELETE(req: NextRequest, { params }: { params: Params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  revalidateUserData();
   return NextResponse.json({ success: true });
 }

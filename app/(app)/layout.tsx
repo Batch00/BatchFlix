@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { TopNav } from "@/components/nav/TopNav";
@@ -44,8 +45,11 @@ export default async function AppLayout({
     data: { user },
   } = await supabase.auth.getUser();
 
+  // Off the render path: the lists exist after the first load, so this is
+  // only a check, and nothing in the layout depends on its result.
   if (user) {
-    await ensureFavoriteLists(user.id);
+    const userId = user.id;
+    after(() => ensureFavoriteLists(userId));
   }
 
   const isDemo = isDemoUser(user?.id);

@@ -30,6 +30,13 @@ export function useSearch(query: string) {
           page: "1",
         });
         const res = await fetch(`/api/tmdb/search/multi?${params}`);
+        if (res.status === 401) {
+          if (!cancelled) {
+            setError("Sign in to search.");
+            setResults([]);
+          }
+          return;
+        }
         if (!res.ok) throw new Error("Search failed");
         const data = await res.json();
         const filtered = (data.results as TMDBSearchMultiResult[]).filter(
@@ -41,7 +48,7 @@ export function useSearch(query: string) {
         }
       } catch {
         if (!cancelled) {
-          setError("Search failed. Please try again.");
+          setError("Search unavailable. Try again.");
           setResults([]);
         }
       } finally {

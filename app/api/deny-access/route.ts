@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
+import { escapeHtml } from "@/lib/escape-html";
 
 function verifyToken(email: string, token: string): boolean {
   try {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(
     `<html><body style="font-family:sans-serif;padding:40px;background:#0a0a0a;color:#fafafa">
       <h2>Access request denied</h2>
-      <p>The access request from <strong>${email}</strong> has been denied.</p>
+      <p>The access request from <strong>${escapeHtml(email)}</strong> has been denied.</p>
     </body></html>`,
     {
       status: 200,

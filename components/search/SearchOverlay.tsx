@@ -237,7 +237,7 @@ export function SearchOverlay({ isOpen, onClose, listMode, favoritesMode }: Prop
                 <div className="flex flex-col items-center gap-2 px-4 py-8 text-center">
                   <RefreshCw className="h-5 w-5 text-muted-foreground" />
                   <p className="text-sm text-muted-foreground">
-                    Search unavailable. Try again.
+                    {error}
                   </p>
                 </div>
               )}

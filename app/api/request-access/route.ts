@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 import { z } from "zod";
 import crypto from "crypto";
+import { escapeHtml } from "@/lib/escape-html";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -45,23 +46,23 @@ export async function POST(request: NextRequest) {
   const { error } = await resend.emails.send({
     from: "noreply@batch-apps.com",
     to: adminEmail!,
-    subject: `BatchFlix Access Request - ${name}`,
+    subject: `BatchFlix Access Request - ${name.replace(/[\r\n]+/g, " ")}`,
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
         <h2 style="margin:0 0 16px">New Access Request</h2>
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px">
           <tr>
             <td style="padding:8px 0;color:#71717a;width:100px">Name</td>
-            <td style="padding:8px 0;font-weight:500">${name}</td>
+            <td style="padding:8px 0;font-weight:500">${escapeHtml(name)}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#71717a">Email</td>
-            <td style="padding:8px 0">${email}</td>
+            <td style="padding:8px 0">${escapeHtml(email)}</td>
           </tr>
           ${referral ? `
           <tr>
             <td style="padding:8px 0;color:#71717a;vertical-align:top">Referral</td>
-            <td style="padding:8px 0">${referral}</td>
+            <td style="padding:8px 0">${escapeHtml(referral)}</td>
           </tr>` : ""}
         </table>
         <div style="display:flex;gap:12px">

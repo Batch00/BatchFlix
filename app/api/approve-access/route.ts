@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import crypto from "crypto";
+import { escapeHtml } from "@/lib/escape-html";
 
 function verifyToken(email: string, token: string): boolean {
   try {
@@ -38,7 +39,7 @@ export async function GET(request: NextRequest) {
 
   if (inviteError) {
     console.error("Invite error:", inviteError);
-    return new NextResponse(`Failed to invite user: ${inviteError.message}`, {
+    return new NextResponse("Failed to invite user. Check the server logs.", {
       status: 500,
     });
   }
@@ -51,7 +52,7 @@ export async function GET(request: NextRequest) {
     subject: "You've been invited to BatchFlix",
     html: `
       <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:24px">
-        <h2 style="margin:0 0 8px">Welcome to BatchFlix${name ? `, ${name}` : ""}</h2>
+        <h2 style="margin:0 0 8px">Welcome to BatchFlix${name ? `, ${escapeHtml(name)}` : ""}</h2>
         <p style="color:#71717a;margin:0 0 24px">
           Check your inbox for an invitation email with a link to set your password.
         </p>
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(
     `<html><body style="font-family:sans-serif;padding:40px;background:#0a0a0a;color:#fafafa">
       <h2>Access approved</h2>
-      <p>Invite sent to <strong>${email}</strong>.</p>
+      <p>Invite sent to <strong>${escapeHtml(email)}</strong>.</p>
     </body></html>`,
     {
       status: 200,

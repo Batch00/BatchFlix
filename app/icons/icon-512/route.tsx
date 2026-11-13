@@ -2,7 +2,8 @@ import { ImageResponse } from "next/og";
 
 const SIZE = 512;
 const ICON = SIZE * 0.55;
-const STROKE = SIZE * 0.04;
+// SIZE * 0.04 px of stroke, converted to the glyph's 24-unit viewBox.
+const STROKE = (SIZE * 0.04 * 24) / ICON;
 
 export async function GET() {
   return new ImageResponse(

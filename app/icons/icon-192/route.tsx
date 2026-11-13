@@ -1,7 +1,5 @@
 import { ImageResponse } from "next/og";
 
-export const runtime = "edge";
-
 const SIZE = 192;
 const ICON = SIZE * 0.55;
 const STROKE = SIZE * 0.05;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -336,7 +336,9 @@ function SortableSublistChip({
   // pointer down: pointerdown resets, dragging sets, the trailing click is
   // suppressed.
   const draggedRef = useRef(false);
-  if (isDragging) draggedRef.current = true;
+  useEffect(() => {
+    if (isDragging) draggedRef.current = true;
+  }, [isDragging]);
 
   return (
     <div

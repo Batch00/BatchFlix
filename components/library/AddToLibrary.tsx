@@ -70,7 +70,9 @@ export function AddToLibrary({
     initialUserMedia?.created_at ? initialUserMedia.created_at.split('T')[0] : ""
   );
 
+  // Resets the editable created date when the source record changes, such as after a refresh.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCreatedAt(
       initialUserMedia?.created_at ? initialUserMedia.created_at.split('T')[0] : ""
     );

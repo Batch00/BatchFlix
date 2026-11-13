@@ -41,9 +41,11 @@ export function DiscoverClient({
   const [tab, setTab] = useState<Tab>("movies");
   const [view, setView] = usePersistedState<"grid" | "list">(VIEW_PREF_KEY, "grid");
 
+  // Restores the saved tab after hydration; reading it during render would not match the server HTML.
   useEffect(() => {
     try {
       const saved = localStorage.getItem(TAB_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved === "movies" || saved === "tv") setTab(saved);
     } catch {
       // ignore
